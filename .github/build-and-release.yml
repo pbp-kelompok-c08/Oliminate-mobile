@@ -1,0 +1,201 @@
+name: Build and Release
+
+on:
+  push:
+    branches:
+      - main
+    tags:
+      - 'v*.*.*'
+  pull_request:
+    branches:
+      - main
+
+env:
+  FLUTTER_VERSION: '3.35.7'
+  JAVA_VERSION: '25'
+
+jobs:
+  # Run tests first
+  test:
+    name: Run Tests
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          flutter-version: ${{ env.FLUTTER_VERSION }}
+          channel: 'stable'
+          cache: true
+
+      - name: Get dependencies
+        run: flutter pub get
+
+      - name: Analyze code
+        run: flutter analyze --no-fatal-warnings --no-fatal-infos
+
+      - name: Run tests
+        run: flutter test
+
+  # Build Android APK and AAB
+  build-android:
+    name: Build Android
+    needs: test
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'zulu'
+          java-version: ${{ env.JAVA_VERSION }}
+          cache: 'gradle'
+
+      - name: Setup Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          flutter-version: ${{ env.FLUTTER_VERSION }}
+          channel: 'stable'
+          cache: true
+
+      - name: Get dependencies
+        run: flutter pub get
+
+      - name: Build APK
+        run: flutter build apk --release
+
+      - name: Rename APK to oliminate.apk
+        run: mv build/app/outputs/flutter-apk/app-release.apk build/app/outputs/flutter-apk/oliminate.apk        
+
+      - name: Build App Bundle
+        run: flutter build appbundle --release
+
+      - name: Upload APK artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: android-apk
+          path: build/app/outputs/flutter-apk/oliminate.apk
+
+      - name: Upload AAB artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: android-aab
+          path: build/app/outputs/bundle/release/app-release.aab
+
+  # Build Web
+  build-web:
+    name: Build Web
+    needs: test
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          flutter-version: ${{ env.FLUTTER_VERSION }}
+          channel: 'stable'
+          cache: true
+
+      - name: Get dependencies
+        run: flutter pub get
+
+      - name: Build Web
+        run: flutter build web --release
+
+      - name: Archive web build
+        run: |
+          cd build/web
+          zip -r ../../web-release.zip .
+
+      - name: Upload Web artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: web-build
+          path: web-release.zip
+
+  # Create GitHub Release
+  release:
+    name: Create Release
+    needs: [build-android, build-web]
+    runs-on: ubuntu-latest
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    permissions:
+      contents: write
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Download all artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: artifacts
+
+      - name: Generate version
+        id: version
+        run: |
+          # Get version from pubspec.yaml
+          VERSION=$(grep "version:" pubspec.yaml | sed 's/version: //')
+          # Get short commit SHA
+          SHA_SHORT=$(git rev-parse --short HEAD)
+          # Generate build number from commits count
+          BUILD_NUMBER=$(git rev-list --count HEAD)
+          
+          # Create full version string
+          FULL_VERSION="${VERSION}+${BUILD_NUMBER}"
+          TAG_NAME="v${VERSION}-build.${BUILD_NUMBER}"
+          
+          echo "version=${FULL_VERSION}" >> $GITHUB_OUTPUT
+          echo "tag_name=${TAG_NAME}" >> $GITHUB_OUTPUT
+          echo "sha_short=${SHA_SHORT}" >> $GITHUB_OUTPUT
+          echo "build_number=${BUILD_NUMBER}" >> $GITHUB_OUTPUT
+
+      - name: Generate release notes
+        id: release_notes
+        run: |
+          cat << EOF > RELEASE_NOTES.md
+          ## Release ${{ steps.version.outputs.version }}
+          
+          ### Build Information
+          - **Version**: ${{ steps.version.outputs.version }}
+          - **Build Number**: ${{ steps.version.outputs.build_number }}
+          - **Commit**: ${{ steps.version.outputs.sha_short }}
+          - **Branch**: main
+          - **Build Date**: $(date -u +"%Y-%m-%d %H:%M:%S UTC")
+          
+          ### Changes
+          $(git log --pretty=format:"- %s (%h)" --no-merges $(git describe --tags --abbrev=0 2>/dev/null || git rev-list --max-parents=0 HEAD)..HEAD || echo "- Initial release")
+          
+          ### Downloads
+          - **Android APK**: For direct installation on Android devices
+          - **Android AAB**: For internal distribution or future Play Store release
+          - **Web Build**: Extract and deploy to any web server
+          
+          ### Notes
+          - Android APK is ready to install on Android devices (enable "Install from Unknown Sources")
+          - Web build can be deployed to any static hosting service (GitHub Pages, Netlify, Vercel, etc.)
+          EOF
+          
+          echo "notes_file=RELEASE_NOTES.md" >> $GITHUB_OUTPUT
+
+      - name: Create Release
+        uses: softprops/action-gh-release@v1
+        with:
+          tag_name: ${{ steps.version.outputs.tag_name }}
+          name: Release ${{ steps.version.outputs.version }}
+          body_path: RELEASE_NOTES.md
+          draft: false
+          prerelease: false
+          files: |
+            artifacts/android-apk/oliminate.apk
+            artifacts/android-aab/app-release.aab
+            artifacts/web-build/web-release.zip
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
