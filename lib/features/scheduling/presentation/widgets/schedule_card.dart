@@ -28,152 +28,123 @@ class ScheduleCard extends StatelessWidget {
     final bool canComplete = isOwner && schedule.status == 'upcoming';
     final bool canReviewable = isOwner && schedule.status == 'completed';
 
-    return Card(
-      margin: const EdgeInsets.symmetric(vertical: 6),
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(18),
+    return Container(
+      margin: const EdgeInsets.symmetric(vertical: 12, horizontal: 8),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(28),
+        boxShadow: <BoxShadow>[
+          BoxShadow(
+            color: Colors.black.withOpacity(0.08),
+            blurRadius: 20,
+            offset: const Offset(0, 10),
+          ),
+        ],
       ),
-      color: Colors.white,
-      elevation: 3,
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: <Widget>[
-          _buildImage(),
-          Padding(
-            padding: const EdgeInsets.fromLTRB(16, 14, 16, 0),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: <Widget>[
-                Text(
-                  '${schedule.team1} vs ${schedule.team2}',
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: const TextStyle(
-                    fontSize: 18,
-                    fontWeight: FontWeight.w600,
-                    color: AppColors.neutral900,
-                  ),
-                ),
-                const SizedBox(height: 4),
-                Text(
-                  schedule.category,
-                  style: const TextStyle(
-                    fontSize: 13,
-                    color: AppColors.neutral700,
-                  ),
-                ),
-                const SizedBox(height: 8),
-                Text(
-                  '${schedule.date} • ${schedule.time}',
-                  style: const TextStyle(
-                    fontSize: 14,
-                    fontWeight: FontWeight.w600,
-                    color: AppColors.pacilBlueDarker2,
-                  ),
-                ),
-                const SizedBox(height: 2),
-                Text(
-                  schedule.location,
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: const TextStyle(
-                    fontSize: 13,
-                    color: AppColors.neutral500,
-                  ),
-                ),
-                if ((schedule.caption ?? '').isNotEmpty) ...<Widget>[
-                  const SizedBox(height: 8),
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(28),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: <Widget>[
+            _buildHeroImage(),
+            Padding(
+              padding: const EdgeInsets.fromLTRB(24, 20, 24, 0),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: <Widget>[
                   Text(
-                    schedule.caption!,
-                    maxLines: 2,
-                    overflow: TextOverflow.ellipsis,
+                    '${schedule.team1} vs ${schedule.team2}',
+                    style: const TextStyle(
+                      fontSize: 20,
+                      fontWeight: FontWeight.w600,
+                      color: AppColors.neutral900,
+                    ),
+                  ),
+                  const SizedBox(height: 6),
+                  Text(
+                    '${schedule.category} — ${schedule.location}',
                     style: const TextStyle(
                       fontSize: 13,
                       color: AppColors.neutral700,
                     ),
                   ),
-                ],
-              ],
-            ),
-          ),
-          const SizedBox(height: 12),
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 16),
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: <Widget>[
-                _buildStatusPill(),
-                if (isOwner)
-                  PopupMenuButton<String>(
-                    icon: const Icon(
-                      Icons.more_horiz,
-                      size: 20,
-                      color: AppColors.neutral700,
+                  const SizedBox(height: 14),
+                  Text(
+                    '${schedule.date} | ${schedule.time}',
+                    style: const TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.w600,
+                      color: AppColors.pacilBlueBase,
                     ),
-                    onSelected: (String value) {
-                      switch (value) {
-                        case 'edit':
-                          onEdit();
-                          break;
-                        case 'delete':
-                          onDelete();
-                          break;
-                        case 'completed':
-                          if (canComplete) onCompleted();
-                          break;
-                        case 'reviewable':
-                          if (canReviewable) onReviewable();
-                          break;
-                      }
-                    },
-                    itemBuilder: (BuildContext context) =>
-                        <PopupMenuEntry<String>>[
-                      const PopupMenuItem<String>(
-                        value: 'edit',
-                        child: Text('Edit'),
+                  ),
+                  const SizedBox(height: 6),
+                  Text(
+                    'Penyelenggara: ${schedule.organizer ?? '-'}',
+                    style: const TextStyle(
+                      fontSize: 13,
+                      color: AppColors.neutral500,
+                    ),
+                  ),
+                  const SizedBox(height: 6),
+                  Row(
+                    children: <Widget>[
+                      const Text(
+                        'Status: ',
+                        style: TextStyle(
+                          fontSize: 13,
+                          color: AppColors.neutral500,
+                        ),
                       ),
-                      const PopupMenuItem<String>(
-                        value: 'delete',
-                        child: Text('Delete'),
-                      ),
-                      PopupMenuItem<String>(
-                        value: 'completed',
-                        enabled: canComplete,
-                        child: const Text('Tandai Completed'),
-                      ),
-                      PopupMenuItem<String>(
-                        value: 'reviewable',
-                        enabled: canReviewable,
-                        child: const Text('Tandai Reviewable'),
+                      Text(
+                        schedule.status,
+                        style: const TextStyle(
+                          fontSize: 13,
+                          fontWeight: FontWeight.w600,
+                          color: AppColors.neutral900,
+                        ),
                       ),
                     ],
                   ),
-              ],
-            ),
-          ),
-          const SizedBox(height: 12),
-          Padding(
-            padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
-            child: SizedBox(
-              height: 40,
-              child: ElevatedButton(
-                onPressed: onDetail,
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: AppColors.pacilBlueDarker2,
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                ),
-                child: const Text('Detail'),
+                ],
               ),
             ),
-          ),
-        ],
+            const SizedBox(height: 20),
+            Padding(
+              padding: const EdgeInsets.fromLTRB(24, 0, 24, 24),
+              child: Align(
+                alignment: Alignment.centerRight,
+                child: OutlinedButton(
+                  onPressed: onDetail,
+                  style: OutlinedButton.styleFrom(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 36,
+                      vertical: 14,
+                    ),
+                    side: const BorderSide(
+                      color: AppColors.pacilBlueBase,
+                      width: 2,
+                    ),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(18),
+                    ),
+                  ),
+                  child: const Text(
+                    'Detail',
+                    style: TextStyle(
+                      color: AppColors.pacilBlueBase,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                ),
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
 
-  Widget _buildImage() {
+  Widget _buildHeroImage() {
     final String? url = schedule.imageUrl;
     final Widget imageChild;
 
@@ -181,7 +152,7 @@ class ScheduleCard extends StatelessWidget {
       imageChild = Image.network(
         url,
         width: double.infinity,
-        height: 160,
+        height: 200,
         fit: BoxFit.cover,
         errorBuilder: (_, __, ___) => _placeholder(),
       );
@@ -189,15 +160,10 @@ class ScheduleCard extends StatelessWidget {
       imageChild = _placeholder();
     }
 
-    return ClipRRect(
-      borderRadius: const BorderRadius.vertical(
-        top: Radius.circular(18),
-      ),
-      child: SizedBox(
-        width: double.infinity,
-        height: 160,
-        child: imageChild,
-      ),
+    return SizedBox(
+      width: double.infinity,
+      height: 200,
+      child: imageChild,
     );
   }
 

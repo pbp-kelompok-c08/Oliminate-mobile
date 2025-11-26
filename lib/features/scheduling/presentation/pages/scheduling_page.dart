@@ -258,18 +258,24 @@ class _SchedulingPageState extends State<SchedulingPage> {
                             crossAxisCount = 1;
                           }
 
+                          final bool singleColumn = crossAxisCount == 1;
+                          final SliverGridDelegateWithFixedCrossAxisCount
+                              gridDelegate =
+                              SliverGridDelegateWithFixedCrossAxisCount(
+                            crossAxisCount: crossAxisCount,
+                            crossAxisSpacing: 12,
+                            mainAxisSpacing: 12,
+                            childAspectRatio:
+                                singleColumn ? 0.9 : 0.95,
+                            mainAxisExtent: singleColumn ? 520 : null,
+                          );
+
                           return RefreshIndicator(
                             onRefresh: () => _fetchList(),
                             child: GridView.builder(
                               physics:
                                   const AlwaysScrollableScrollPhysics(),
-                              gridDelegate:
-                                  SliverGridDelegateWithFixedCrossAxisCount(
-                                crossAxisCount: crossAxisCount,
-                                crossAxisSpacing: 12,
-                                mainAxisSpacing: 12,
-                                childAspectRatio: 0.8,
-                              ),
+                              gridDelegate: gridDelegate,
                               itemCount: _items.length,
                               itemBuilder:
                                   (BuildContext context, int index) {
