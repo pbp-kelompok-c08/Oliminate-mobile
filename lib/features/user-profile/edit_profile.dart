@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:oliminate_mobile/core/app_config.dart';
+import 'package:oliminate_mobile/features/user-profile/auth_repository.dart';
 
 class EditProfilePage extends StatefulWidget {
   const EditProfilePage({super.key});
@@ -14,12 +16,20 @@ class _EditProfilePageState extends State<EditProfilePage> {
   static const Color _baseBlue = Color(0xFF3293EC);
   static const Color _navy = Color(0xFF113352);
 
+  final _authRepo = AuthRepository.instance;
+
   final _usernameController = TextEditingController();
   final _firstNameController = TextEditingController();
   final _lastNameController = TextEditingController();
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
   String? _selectedFaculty;
+
+  bool _isLoading = true;
+  bool _isSaving = false;
+  String? _error;
+  String? _profilePicturePath;
+  String? _profileImageUrl;
 
   final List<String> _faculties = const [
     'Kedokteran',
@@ -51,8 +61,81 @@ class _EditProfilePageState extends State<EditProfilePage> {
   }
 
   @override
+  void initState() {
+    super.initState();
+    _loadProfile();
+  }
+
+  Future<void> _loadProfile() async {
+    await _authRepo.init();
+    final data = await _authRepo.fetchProfileFromEdit() ?? await _authRepo.fetchProfile();
+    if (!mounted) return;
+    setState(() {
+      _isLoading = false;
+      if (data != null) {
+        _usernameController.text = data.username;
+        _firstNameController.text = data.firstName;
+        _lastNameController.text = data.lastName;
+        _emailController.text = data.email;
+        _selectedFaculty = data.fakultas.isEmpty ? null : data.fakultas;
+        _profileImageUrl =
+            data.profilePictureUrl.isNotEmpty ? data.profilePictureUrl : _authRepo.cachedProfile?.profilePictureUrl;
+      } else {
+        _error = 'Gagal memuat data profil. Pastikan sudah login.';
+      }
+    });
+  }
+
+  Future<void> _save() async {
+    setState(() {
+      _isSaving = true;
+      _error = null;
+    });
+
+    final res = await _authRepo.updateProfile(
+      ProfileUpdate(
+        username: _usernameController.text.trim(),
+        firstName: _firstNameController.text.trim(),
+        lastName: _lastNameController.text.trim(),
+        email: _emailController.text.trim(),
+        fakultas: _selectedFaculty ?? '',
+        password: _passwordController.text,
+        profilePicturePath: _profilePicturePath,
+      ),
+    );
+
+    if (!mounted) return;
+    setState(() => _isSaving = false);
+
+    if (res.success) {
+      if (mounted) {
+        ScaffoldMessenger.of(context)
+            .showSnackBar(const SnackBar(content: Text('Profil berhasil diperbarui.')));
+        Navigator.of(context).pop();
+      }
+    } else {
+      setState(() => _error = res.message);
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(res.message ?? 'Gagal menyimpan perubahan')),
+      );
+    }
+  }
+
+  @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+
+    String? _resolveImage(String? path) {
+      if (path == null || path.isEmpty) return null;
+      if (path.startsWith('http')) return path;
+      return '${AppConfig.backendBaseUrl}$path';
+    }
+
+    if (_isLoading) {
+      return const Scaffold(
+        body: Center(child: CircularProgressIndicator()),
+      );
+    }
 
     return Scaffold(
       body: SafeArea(
@@ -88,7 +171,11 @@ class _EditProfilePageState extends State<EditProfilePage> {
                     padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 24),
                     child: Column(
                       children: [
-                        _AvatarPlaceholder(accent: _baseBlue, navy: _navy),
+                        _AvatarPlaceholder(
+                          accent: _baseBlue,
+                          navy: _navy,
+                          imageUrl: _resolveImage(_profileImageUrl),
+                        ),
                         const SizedBox(height: 12),
                         OutlinedButton(
                           style: OutlinedButton.styleFrom(
@@ -172,6 +259,15 @@ class _EditProfilePageState extends State<EditProfilePage> {
                           obscure: true,
                         ),
                         const SizedBox(height: 22),
+                        if (_error != null)
+                          Padding(
+                            padding: const EdgeInsets.only(bottom: 12),
+                            child: Text(
+                              _error!,
+                              textAlign: TextAlign.center,
+                              style: theme.textTheme.bodyMedium?.copyWith(color: Colors.red.shade700),
+                            ),
+                          ),
                         Row(
                           children: [
                             Expanded(
@@ -201,13 +297,9 @@ class _EditProfilePageState extends State<EditProfilePage> {
                                   elevation: 8,
                                   shadowColor: _baseBlue.withOpacity(0.28),
                                 ),
-                                onPressed: () {
-                                  ScaffoldMessenger.of(context).showSnackBar(
-                                    const SnackBar(content: Text('Save tapped (hubungkan ke backend nanti)')),
-                                  );
-                                },
+                                onPressed: _isSaving ? null : _save,
                                 child: Text(
-                                  'Save',
+                                  _isSaving ? 'Saving...' : 'Save',
                                   style: theme.textTheme.labelLarge?.copyWith(
                                     color: Colors.white,
                                     fontWeight: FontWeight.w700,
@@ -276,10 +368,15 @@ class _FormField extends StatelessWidget {
 }
 
 class _AvatarPlaceholder extends StatelessWidget {
-  const _AvatarPlaceholder({required this.accent, required this.navy});
+  const _AvatarPlaceholder({
+    required this.accent,
+    required this.navy,
+    this.imageUrl,
+  });
 
   final Color accent;
   final Color navy;
+  final String? imageUrl;
 
   @override
   Widget build(BuildContext context) {
@@ -296,7 +393,10 @@ class _AvatarPlaceholder extends StatelessWidget {
       child: CircleAvatar(
         radius: 52,
         backgroundColor: const Color(0xFFE9EEF5),
-        child: Icon(Icons.person, size: 54, color: navy.withOpacity(0.62)),
+        backgroundImage: imageUrl != null ? NetworkImage(imageUrl!) : null,
+        child: imageUrl == null
+            ? Icon(Icons.person, size: 54, color: navy.withOpacity(0.62))
+            : null,
       ),
     );
   }

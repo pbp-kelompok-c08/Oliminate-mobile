@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:oliminate_mobile/features/user-profile/auth_repository.dart';
+import 'package:oliminate_mobile/features/user-profile/login.dart';
 
 const Color kAuthBlue = Color(0xFF22629E);
 const Color kAuthRed = Color(0xFF9E292D);
@@ -24,9 +26,13 @@ class _RegisterPageState extends State<RegisterPage> {
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
   final _phoneController = TextEditingController();
+  final _authRepo = AuthRepository.instance;
 
   final List<String> _roleOptions = const ['User', 'Organizer'];
   String _selectedRole = 'User';
+
+  bool _isLoading = false;
+  String? _error;
 
   @override
   void dispose() {
@@ -72,7 +78,10 @@ class _RegisterPageState extends State<RegisterPage> {
                       ),
                     ],
                   ),
-                  padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 26),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 24,
+                    vertical: 26,
+                  ),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.stretch,
                     mainAxisSize: MainAxisSize.min,
@@ -127,7 +136,9 @@ class _RegisterPageState extends State<RegisterPage> {
                               label: 'Phone number',
                               controller: _phoneController,
                               keyboardType: TextInputType.phone,
-                              autofillHints: const [AutofillHints.telephoneNumber],
+                              autofillHints: const [
+                                AutofillHints.telephoneNumber,
+                              ],
                             ),
                             const SizedBox(height: 14),
                             Text(
@@ -141,14 +152,22 @@ class _RegisterPageState extends State<RegisterPage> {
                             DecoratedBox(
                               decoration: BoxDecoration(
                                 borderRadius: BorderRadius.circular(12),
-                                border: Border.all(color: const Color(0xFFE6EDF6)),
+                                border: Border.all(
+                                  color: const Color(0xFFE6EDF6),
+                                ),
                               ),
                               child: DropdownButtonFormField<String>(
                                 value: _selectedRole,
-                                icon: const Icon(Icons.keyboard_arrow_down_rounded, color: Colors.black54),
+                                icon: const Icon(
+                                  Icons.keyboard_arrow_down_rounded,
+                                  color: Colors.black54,
+                                ),
                                 decoration: InputDecoration(
                                   border: InputBorder.none,
-                                  contentPadding: const EdgeInsets.symmetric(vertical: 4, horizontal: 14),
+                                  contentPadding: const EdgeInsets.symmetric(
+                                    vertical: 4,
+                                    horizontal: 14,
+                                  ),
                                   filled: true,
                                   fillColor: Colors.white,
                                 ),
@@ -170,23 +189,83 @@ class _RegisterPageState extends State<RegisterPage> {
                             const SizedBox(height: 22),
                             _GradientButton(
                               label: 'Submit',
-                              onPressed: () {
-                                if (_formKey.currentState?.validate() ?? false) {
-                                  FocusScope.of(context).unfocus();
-                                  ScaffoldMessenger.of(context).showSnackBar(
-                                    SnackBar(
-                                      content: Text(
-                                        'Submit tapped untuk ${_selectedRole.toLowerCase()} (hubungkan ke backend Django).',
-                                      ),
-                                    ),
-                                  );
-                                }
-                              },
+                              isLoading: _isLoading,
+                              onPressed: _isLoading
+                                  ? null
+                                  : () async {
+                                      if (!(_formKey.currentState?.validate() ??
+                                          false))
+                                        return;
+                                      FocusScope.of(context).unfocus();
+                                      setState(() {
+                                        _isLoading = true;
+                                        _error = null;
+                                      });
+
+                                      final res = await _authRepo.register(
+                                        username: _usernameController.text
+                                            .trim(),
+                                        firstName: _firstNameController.text
+                                            .trim(),
+                                        lastName: _lastNameController.text
+                                            .trim(),
+                                        email: _emailController.text.trim(),
+                                        password: _passwordController.text
+                                            .trim(),
+                                        phoneNumber: _phoneController.text
+                                            .trim(),
+                                        role: _selectedRole.toLowerCase(),
+                                      );
+
+                                      if (!mounted) return;
+                                      setState(() => _isLoading = false);
+                                      if (res.success) {
+                                        final successMessage =
+                                            res.message ??
+                                                'Registrasi berhasil. Silakan login.';
+                                        ScaffoldMessenger.of(context)
+                                            .showSnackBar(
+                                          SnackBar(
+                                            content: Text(successMessage),
+                                          ),
+                                        );
+                                        if (widget.onLoginTap != null) {
+                                          widget.onLoginTap!.call();
+                                        } else {
+                                          Navigator.of(context)
+                                              .pushReplacementNamed(
+                                            LoginPage.routeName,
+                                          );
+                                        }
+                                      } else {
+                                        setState(() => _error = res.message);
+                                        ScaffoldMessenger.of(
+                                          context,
+                                        ).showSnackBar(
+                                          SnackBar(
+                                            content: Text(
+                                              res.message ?? 'Registrasi gagal',
+                                            ),
+                                          ),
+                                        );
+                                      }
+                                    },
                             ),
                           ],
                         ),
                       ),
                       const SizedBox(height: 20),
+                      if (_error != null)
+                        Padding(
+                          padding: const EdgeInsets.only(bottom: 12),
+                          child: Text(
+                            _error!,
+                            textAlign: TextAlign.center,
+                            style: theme.textTheme.bodyMedium?.copyWith(
+                              color: Colors.red.shade700,
+                            ),
+                          ),
+                        ),
                       Center(
                         child: Wrap(
                           alignment: WrapAlignment.center,
@@ -205,14 +284,10 @@ class _RegisterPageState extends State<RegisterPage> {
                                   widget.onLoginTap!.call();
                                   return;
                                 }
-                                final popped = await Navigator.of(context).maybePop();
-                                if (!popped && mounted) {
-                                ScaffoldMessenger.of(context).showSnackBar(
-                                    const SnackBar(
-                                      content: Text('Hubungkan routing ke halaman login.'),
-                                    ),
-                                  );
-                                }
+                                if (!mounted) return;
+                                Navigator.of(
+                                  context,
+                                ).pushReplacementNamed(LoginPage.routeName);
                               },
                               child: Text(
                                 'Login here',
@@ -273,11 +348,16 @@ class _LabeledField extends StatelessWidget {
           keyboardType: keyboardType,
           obscureText: obscure,
           autofillHints: autofillHints,
-          validator: (value) => (value == null || value.trim().isEmpty) ? '$label is required' : null,
+          validator: (value) => (value == null || value.trim().isEmpty)
+              ? '$label is required'
+              : null,
           decoration: InputDecoration(
             filled: true,
             fillColor: Colors.white,
-            contentPadding: const EdgeInsets.symmetric(vertical: 14, horizontal: 14),
+            contentPadding: const EdgeInsets.symmetric(
+              vertical: 14,
+              horizontal: 14,
+            ),
             border: OutlineInputBorder(
               borderRadius: BorderRadius.circular(12),
               borderSide: const BorderSide(color: Color(0xFFE6EDF6)),
@@ -298,10 +378,15 @@ class _LabeledField extends StatelessWidget {
 }
 
 class _GradientButton extends StatelessWidget {
-  const _GradientButton({required this.label, required this.onPressed});
+  const _GradientButton({
+    required this.label,
+    required this.onPressed,
+    this.isLoading = false,
+  });
 
   final String label;
-  final VoidCallback onPressed;
+  final VoidCallback? onPressed;
+  final bool isLoading;
 
   @override
   Widget build(BuildContext context) {
@@ -331,13 +416,22 @@ class _GradientButton extends StatelessWidget {
           child: Padding(
             padding: const EdgeInsets.symmetric(vertical: 14),
             child: Center(
-              child: Text(
-                label,
-                style: theme.textTheme.labelLarge?.copyWith(
-                  color: Colors.white,
-                  fontWeight: FontWeight.w800,
-                ),
-              ),
+              child: isLoading
+                  ? const SizedBox(
+                      height: 18,
+                      width: 18,
+                      child: CircularProgressIndicator(
+                        strokeWidth: 2.2,
+                        valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                      ),
+                    )
+                  : Text(
+                      label,
+                      style: theme.textTheme.labelLarge?.copyWith(
+                        color: Colors.white,
+                        fontWeight: FontWeight.w800,
+                      ),
+                    ),
             ),
           ),
         ),

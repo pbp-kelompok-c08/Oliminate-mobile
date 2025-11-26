@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
+import 'package:oliminate_mobile/core/app_config.dart';
+import 'package:oliminate_mobile/features/user-profile/auth_repository.dart';
 import 'edit_profile.dart';
 
-class ProfilePage extends StatelessWidget {
+class ProfilePage extends StatefulWidget {
   const ProfilePage({super.key});
 
   static const String routeName = '/profile';
@@ -11,8 +13,79 @@ class ProfilePage extends StatelessWidget {
   static const Color _navy = Color(0xFF113352);
 
   @override
+  State<ProfilePage> createState() => _ProfilePageState();
+}
+
+class _ProfilePageState extends State<ProfilePage> {
+  final _authRepo = AuthRepository.instance;
+  ProfileData? _profile;
+  bool _loading = true;
+  String? _error;
+
+  @override
+  void initState() {
+    super.initState();
+    _load();
+  }
+
+  Future<void> _load() async {
+    await _authRepo.init();
+    final ok = await _authRepo.validateSession();
+    if (!mounted) return;
+    if (!ok) {
+      setState(() {
+        _loading = false;
+        _error = 'Sesi berakhir, silakan login ulang.';
+      });
+      return;
+    }
+    final data = await _authRepo.fetchProfile();
+    if (!mounted) return;
+    setState(() {
+      _profile = data;
+      _loading = false;
+      _error = data == null ? 'Profil tidak bisa dimuat.' : null;
+    });
+  }
+
+  String? _resolveImage(String path) {
+    if (path.isEmpty) return null;
+    if (path.startsWith('http')) return path;
+    return '${AppConfig.backendBaseUrl}$path';
+  }
+
+  @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+
+    if (_loading) {
+      return const Scaffold(
+        body: Center(child: CircularProgressIndicator()),
+      );
+    }
+
+    if (_profile == null) {
+      return Scaffold(
+        body: Center(
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Text(
+                _error ?? 'Profil tidak tersedia.',
+                style: theme.textTheme.bodyLarge,
+              ),
+              const SizedBox(height: 12),
+              FilledButton(
+                onPressed: _load,
+                child: const Text('Coba lagi'),
+              ),
+            ],
+          ),
+        ),
+      );
+    }
+
+    final p = _profile!;
 
     return Scaffold(
       body: SafeArea(
@@ -28,7 +101,7 @@ class ProfilePage extends StatelessWidget {
                     'User Profile',
                     style: theme.textTheme.titleLarge?.copyWith(
                       fontWeight: FontWeight.w800,
-                      color: _navy,
+                      color: ProfilePage._navy,
                     ),
                   ),
                   const SizedBox(height: 14),
@@ -45,51 +118,64 @@ class ProfilePage extends StatelessWidget {
                         ),
                       ],
                     ),
-                    padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 24),
+                    padding:
+                        const EdgeInsets.symmetric(horizontal: 20, vertical: 24),
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.center,
                       children: [
-                        _AvatarPlaceholder(accent: _baseBlue, navy: _navy),
+                        _AvatarPlaceholder(
+                          accent: ProfilePage._baseBlue,
+                          navy: ProfilePage._navy,
+                          imageUrl: _resolveImage(p.profilePictureUrl),
+                        ),
                         const SizedBox(height: 12),
                         Text(
-                          'Nama belum diisi',
+                          '${p.firstName} ${p.lastName}'.trim(),
                           style: theme.textTheme.titleMedium?.copyWith(
                             fontWeight: FontWeight.w700,
-                            color: _navy,
+                            color: ProfilePage._navy,
                           ),
                         ),
                         const SizedBox(height: 4),
                         Text(
-                          'Role belum diisi',
-                          style: theme.textTheme.bodyMedium?.copyWith(color: _muted),
+                          p.role.isEmpty ? 'Role belum diisi' : p.role,
+                          style: theme.textTheme.bodyMedium
+                              ?.copyWith(color: ProfilePage._muted),
                         ),
                         const SizedBox(height: 22),
-                        _ProfileField(label: 'Username', value: ''),
+                        _ProfileField(label: 'Username', value: p.username),
                         const SizedBox(height: 16),
-                        _ProfileField(label: 'First Name', value: ''),
+                        _ProfileField(label: 'First Name', value: p.firstName),
                         const SizedBox(height: 16),
-                        _ProfileField(label: 'Last Name', value: ''),
+                        _ProfileField(label: 'Last Name', value: p.lastName),
                         const SizedBox(height: 16),
                         _ProfileField(
                           label: 'Email',
-                          value: '',
+                          value: p.email,
                           keyboardType: TextInputType.emailAddress,
                         ),
                         const SizedBox(height: 16),
-                        _ProfileField(label: 'Faculty', value: ''),
+                        _ProfileField(label: 'Faculty', value: p.fakultas),
                         const SizedBox(height: 16),
-                        _ProfileField(label: 'Password', value: '', obscure: true),
+                        const _ProfileField(
+                            label: 'Password', value: '********', obscure: true),
                         const SizedBox(height: 20),
                         SizedBox(
                           width: double.infinity,
                           child: FilledButton(
-                            onPressed: () => Navigator.of(context).pushNamed(EditProfilePage.routeName),
+                            onPressed: () async {
+                              await Navigator.of(context)
+                                  .pushNamed(EditProfilePage.routeName);
+                              if (mounted) _load();
+                            },
                             style: FilledButton.styleFrom(
-                              backgroundColor: _baseBlue,
+                              backgroundColor: ProfilePage._baseBlue,
                               padding: const EdgeInsets.symmetric(vertical: 14),
-                              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                              shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(12)),
                               elevation: 8,
-                              shadowColor: _baseBlue.withOpacity(0.28),
+                              shadowColor:
+                                  ProfilePage._baseBlue.withOpacity(0.28),
                             ),
                             child: Text(
                               'Edit Profile',
@@ -106,7 +192,8 @@ class ProfilePage extends StatelessWidget {
                   const SizedBox(height: 28),
                   Text(
                     '© 2025 Oliminate',
-                    style: theme.textTheme.bodySmall?.copyWith(color: _navy),
+                    style: theme.textTheme.bodySmall
+                        ?.copyWith(color: ProfilePage._navy),
                   ),
                 ],
               ),
@@ -168,10 +255,15 @@ class _ProfileField extends StatelessWidget {
 }
 
 class _AvatarPlaceholder extends StatelessWidget {
-  const _AvatarPlaceholder({required this.accent, required this.navy});
+  const _AvatarPlaceholder({
+    required this.accent,
+    required this.navy,
+    this.imageUrl,
+  });
 
   final Color accent;
   final Color navy;
+  final String? imageUrl;
 
   @override
   Widget build(BuildContext context) {
@@ -188,32 +280,11 @@ class _AvatarPlaceholder extends StatelessWidget {
       child: CircleAvatar(
         radius: 52,
         backgroundColor: const Color(0xFFE9EEF5),
-        child: Icon(Icons.person, size: 54, color: navy.withOpacity(0.62)),
+        backgroundImage: imageUrl != null ? NetworkImage(imageUrl!) : null,
+        child: imageUrl == null
+            ? Icon(Icons.person, size: 54, color: navy.withOpacity(0.62))
+            : null,
       ),
     );
   }
-}
-
-class UserProfile {
-  const UserProfile({
-    required this.profilePictureUrl,
-    required this.username,
-    required this.firstName,
-    required this.lastName,
-    required this.email,
-    required this.faculty,
-    required this.maskedPassword,
-    required this.role,
-  });
-
-  final String profilePictureUrl;
-  final String username;
-  final String firstName;
-  final String lastName;
-  final String email;
-  final String faculty;
-  final String maskedPassword;
-  final String role;
-
-  String get fullName => '$firstName $lastName';
 }

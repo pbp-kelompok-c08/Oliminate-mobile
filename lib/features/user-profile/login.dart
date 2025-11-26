@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:oliminate_mobile/features/user-profile/auth_repository.dart';
+import 'package:oliminate_mobile/features/user-profile/main_profile.dart';
 import 'register.dart';
 
 const Color kAuthBlue = Color(0xFF22629E);
@@ -22,12 +24,63 @@ class _LoginPageState extends State<LoginPage> {
   final _formKey = GlobalKey<FormState>();
   final _usernameController = TextEditingController();
   final _passwordController = TextEditingController();
+  final _authRepo = AuthRepository.instance;
+
+  bool _isLoading = false;
+  String? _error;
 
   @override
   void dispose() {
     _usernameController.dispose();
     _passwordController.dispose();
     super.dispose();
+  }
+
+  @override
+  void initState() {
+    super.initState();
+    _bootstrapSession();
+  }
+
+  Future<void> _bootstrapSession() async {
+    await _authRepo.init();
+    final ok = await _authRepo.validateSession();
+    if (!mounted) return;
+    if (ok) {
+      _goToProfile();
+    }
+  }
+
+  Future<void> _submit() async {
+    if (!(_formKey.currentState?.validate() ?? false)) return;
+    setState(() {
+      _isLoading = true;
+      _error = null;
+    });
+
+    final res = await _authRepo.login(
+      username: _usernameController.text.trim(),
+      password: _passwordController.text.trim(),
+    );
+
+    if (!mounted) return;
+    setState(() => _isLoading = false);
+    if (res.success) {
+      _goToProfile();
+    } else {
+      setState(() => _error = res.message);
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text(res.message ?? 'Login gagal')));
+    }
+  }
+
+  void _goToProfile() {
+    if (widget.onLoginSuccess != null) {
+      widget.onLoginSuccess!.call();
+      return;
+    }
+    Navigator.of(context).pushReplacementNamed(ProfilePage.routeName);
   }
 
   @override
@@ -63,7 +116,10 @@ class _LoginPageState extends State<LoginPage> {
                       ),
                     ],
                   ),
-                  padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 26),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 24,
+                    vertical: 26,
+                  ),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.stretch,
                     mainAxisSize: MainAxisSize.min,
@@ -97,25 +153,29 @@ class _LoginPageState extends State<LoginPage> {
                             const SizedBox(height: 24),
                             _GradientButton(
                               label: 'Login',
-                              onPressed: () {
-                                if (_formKey.currentState?.validate() ?? false) {
-                                  FocusScope.of(context).unfocus();
-                                  if (widget.onLoginSuccess != null) {
-                                    widget.onLoginSuccess!.call();
-                                  } else {
-                                    ScaffoldMessenger.of(context).showSnackBar(
-                                      const SnackBar(
-                                        content: Text('Login tapped (hubungkan ke backend Django).'),
-                                      ),
-                                    );
-                                  }
-                                }
-                              },
+                              onPressed: _isLoading
+                                  ? null
+                                  : () {
+                                      FocusScope.of(context).unfocus();
+                                      _submit();
+                                    },
+                              isLoading: _isLoading,
                             ),
                           ],
                         ),
                       ),
                       const SizedBox(height: 20),
+                      if (_error != null)
+                        Padding(
+                          padding: const EdgeInsets.only(bottom: 12),
+                          child: Text(
+                            _error!,
+                            textAlign: TextAlign.center,
+                            style: theme.textTheme.bodyMedium?.copyWith(
+                              color: Colors.red.shade700,
+                            ),
+                          ),
+                        ),
                       Center(
                         child: Wrap(
                           alignment: WrapAlignment.center,
@@ -129,17 +189,17 @@ class _LoginPageState extends State<LoginPage> {
                               ),
                             ),
                             InkWell(
-                              onTap: () {
-                                if (widget.onRegisterTap != null) {
-                                  widget.onRegisterTap!.call();
-                                } else {
-                                  Navigator.of(context).push(
-                                    MaterialPageRoute(
-                                      builder: (_) => const RegisterPage(),
-                                    ),
-                                  );
-                                }
-                              },
+                              onTap: _isLoading
+                                  ? null
+                                  : () {
+                                      if (widget.onRegisterTap != null) {
+                                        widget.onRegisterTap!.call();
+                                      } else {
+                                        Navigator.of(
+                                          context,
+                                        ).pushNamed(RegisterPage.routeName);
+                                      }
+                                    },
                               child: Text(
                                 'Register here',
                                 style: theme.textTheme.bodyMedium?.copyWith(
@@ -196,11 +256,16 @@ class _LabeledField extends StatelessWidget {
           controller: controller,
           obscureText: obscure,
           autofillHints: autofillHints,
-          validator: (value) => (value == null || value.trim().isEmpty) ? '$label is required' : null,
+          validator: (value) => (value == null || value.trim().isEmpty)
+              ? '$label is required'
+              : null,
           decoration: InputDecoration(
             filled: true,
             fillColor: Colors.white,
-            contentPadding: const EdgeInsets.symmetric(vertical: 14, horizontal: 14),
+            contentPadding: const EdgeInsets.symmetric(
+              vertical: 14,
+              horizontal: 14,
+            ),
             border: OutlineInputBorder(
               borderRadius: BorderRadius.circular(12),
               borderSide: const BorderSide(color: Color(0xFFE6EDF6)),
@@ -221,10 +286,15 @@ class _LabeledField extends StatelessWidget {
 }
 
 class _GradientButton extends StatelessWidget {
-  const _GradientButton({required this.label, required this.onPressed});
+  const _GradientButton({
+    required this.label,
+    required this.onPressed,
+    this.isLoading = false,
+  });
 
   final String label;
-  final VoidCallback onPressed;
+  final VoidCallback? onPressed;
+  final bool isLoading;
 
   @override
   Widget build(BuildContext context) {
@@ -254,13 +324,22 @@ class _GradientButton extends StatelessWidget {
           child: Padding(
             padding: const EdgeInsets.symmetric(vertical: 14),
             child: Center(
-              child: Text(
-                label,
-                style: theme.textTheme.labelLarge?.copyWith(
-                  color: Colors.white,
-                  fontWeight: FontWeight.w800,
-                ),
-              ),
+              child: isLoading
+                  ? const SizedBox(
+                      height: 18,
+                      width: 18,
+                      child: CircularProgressIndicator(
+                        strokeWidth: 2.2,
+                        valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                      ),
+                    )
+                  : Text(
+                      label,
+                      style: theme.textTheme.labelLarge?.copyWith(
+                        color: Colors.white,
+                        fontWeight: FontWeight.w800,
+                      ),
+                    ),
             ),
           ),
         ),
