@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
+import 'dart:typed_data';
 
 import 'package:html/parser.dart' as html_parser;
 import 'package:http/http.dart' as http;
@@ -44,6 +45,8 @@ class ProfileUpdate {
     required this.fakultas,
     required this.password,
     this.profilePicturePath,
+    this.profilePictureBytes,
+    this.profilePictureName,
   });
 
   final String username;
@@ -53,6 +56,8 @@ class ProfileUpdate {
   final String fakultas;
   final String password;
   final String? profilePicturePath;
+  final Uint8List? profilePictureBytes;
+  final String? profilePictureName;
 }
 
 class AuthRepository {
@@ -235,7 +240,18 @@ class AuthRepository {
       };
 
       final files = <http.MultipartFile>[];
-      if (payload.profilePicturePath != null &&
+      if (payload.profilePictureBytes != null &&
+          payload.profilePictureBytes!.isNotEmpty) {
+        final fileName =
+            (payload.profilePictureName?.isNotEmpty ?? false) ? payload.profilePictureName! : 'profile.jpg';
+        files.add(
+          http.MultipartFile.fromBytes(
+            'profile_picture',
+            payload.profilePictureBytes!,
+            filename: fileName,
+          ),
+        );
+      } else if (payload.profilePicturePath != null &&
           payload.profilePicturePath!.isNotEmpty) {
         files.add(
           await http.MultipartFile.fromPath(
@@ -246,7 +262,7 @@ class AuthRepository {
       }
 
       final streamed = await _client.postMultipart(
-        '/users/edit/',
+        '/authentication/api/profile/update/',
         fields: fields,
         files: files,
         followRedirects: false,

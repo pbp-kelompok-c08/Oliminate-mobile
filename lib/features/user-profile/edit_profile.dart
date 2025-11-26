@@ -1,3 +1,7 @@
+import 'dart:typed_data';
+
+import 'package:file_picker/file_picker.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:oliminate_mobile/core/app_config.dart';
 import 'package:oliminate_mobile/features/user-profile/auth_repository.dart';
@@ -30,6 +34,8 @@ class _EditProfilePageState extends State<EditProfilePage> {
   String? _error;
   String? _profilePicturePath;
   String? _profileImageUrl;
+  Uint8List? _profilePictureBytes;
+  String? _profilePictureName;
 
   final List<String> _faculties = const [
     'Kedokteran',
@@ -66,6 +72,19 @@ class _EditProfilePageState extends State<EditProfilePage> {
     _loadProfile();
   }
 
+  String? _normalizeFaculty(String fakultas) {
+    final value = fakultas.trim();
+    if (value.isEmpty || value == '-') {
+      return null;
+    }
+    for (final f in _faculties) {
+      if (f.toLowerCase() == value.toLowerCase()) {
+        return f;
+      }
+    }
+    return null;
+  }
+
   Future<void> _loadProfile() async {
     await _authRepo.init();
     final data = await _authRepo.fetchProfileFromEdit() ?? await _authRepo.fetchProfile();
@@ -77,13 +96,50 @@ class _EditProfilePageState extends State<EditProfilePage> {
         _firstNameController.text = data.firstName;
         _lastNameController.text = data.lastName;
         _emailController.text = data.email;
-        _selectedFaculty = data.fakultas.isEmpty ? null : data.fakultas;
+        _selectedFaculty = _normalizeFaculty(data.fakultas);
         _profileImageUrl =
             data.profilePictureUrl.isNotEmpty ? data.profilePictureUrl : _authRepo.cachedProfile?.profilePictureUrl;
+        _profilePictureBytes = null;
+        _profilePictureName = null;
+        _profilePicturePath = null;
       } else {
         _error = 'Gagal memuat data profil. Pastikan sudah login.';
       }
     });
+  }
+
+  Future<void> _pickProfilePicture() async {
+    try {
+      final result = await FilePicker.platform.pickFiles(
+        type: FileType.image,
+        withData: true,
+      );
+      if (result == null || result.files.isEmpty) return;
+
+      final file = result.files.first;
+      final bytes = file.bytes;
+      if (bytes == null || bytes.isEmpty) return;
+
+      if (bytes.lengthInBytes > 2 * 1024 * 1024) {
+        if (!mounted) return;
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Ukuran foto maksimal 2MB.')),
+        );
+        return;
+      }
+
+      setState(() {
+        _profilePictureBytes = bytes;
+        _profilePictureName = file.name;
+        _profilePicturePath = kIsWeb ? null : file.path;
+        _profileImageUrl = null;
+      });
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Gagal memilih foto: $e')),
+      );
+    }
   }
 
   Future<void> _save() async {
@@ -101,6 +157,8 @@ class _EditProfilePageState extends State<EditProfilePage> {
         fakultas: _selectedFaculty ?? '',
         password: _passwordController.text,
         profilePicturePath: _profilePicturePath,
+        profilePictureBytes: _profilePictureBytes,
+        profilePictureName: _profilePictureName,
       ),
     );
 
@@ -130,6 +188,8 @@ class _EditProfilePageState extends State<EditProfilePage> {
       if (path.startsWith('http')) return path;
       return '${AppConfig.backendBaseUrl}$path';
     }
+
+    final String? resolvedImageUrl = _resolveImage(_profileImageUrl);
 
     if (_isLoading) {
       return const Scaffold(
@@ -174,7 +234,9 @@ class _EditProfilePageState extends State<EditProfilePage> {
                         _AvatarPlaceholder(
                           accent: _baseBlue,
                           navy: _navy,
-                          imageUrl: _resolveImage(_profileImageUrl),
+                          imageProvider: _profilePictureBytes != null
+                              ? MemoryImage(_profilePictureBytes!)
+                              : (resolvedImageUrl != null ? NetworkImage(resolvedImageUrl) : null),
                         ),
                         const SizedBox(height: 12),
                         OutlinedButton(
@@ -183,7 +245,7 @@ class _EditProfilePageState extends State<EditProfilePage> {
                             padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 10),
                             shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                           ),
-                          onPressed: () {},
+                          onPressed: _pickProfilePicture,
                           child: Text(
                             'Edit Picture',
                             style: theme.textTheme.labelLarge?.copyWith(
@@ -371,12 +433,12 @@ class _AvatarPlaceholder extends StatelessWidget {
   const _AvatarPlaceholder({
     required this.accent,
     required this.navy,
-    this.imageUrl,
+    this.imageProvider,
   });
 
   final Color accent;
   final Color navy;
-  final String? imageUrl;
+  final ImageProvider<Object>? imageProvider;
 
   @override
   Widget build(BuildContext context) {
@@ -393,8 +455,8 @@ class _AvatarPlaceholder extends StatelessWidget {
       child: CircleAvatar(
         radius: 52,
         backgroundColor: const Color(0xFFE9EEF5),
-        backgroundImage: imageUrl != null ? NetworkImage(imageUrl!) : null,
-        child: imageUrl == null
+        backgroundImage: imageProvider,
+        child: imageProvider == null
             ? Icon(Icons.person, size: 54, color: navy.withOpacity(0.62))
             : null,
       ),
