@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:oliminate_mobile/core/app_config.dart';
 import 'package:oliminate_mobile/features/user-profile/auth_repository.dart';
+import 'package:oliminate_mobile/features/user-profile/login.dart';
 import 'edit_profile.dart';
 
 class ProfilePage extends StatefulWidget {
@@ -21,6 +22,7 @@ class _ProfilePageState extends State<ProfilePage> {
   ProfileData? _profile;
   bool _loading = true;
   String? _error;
+  bool _loggingOut = false;
 
   @override
   void initState() {
@@ -46,6 +48,21 @@ class _ProfilePageState extends State<ProfilePage> {
       _loading = false;
       _error = data == null ? 'Profil tidak bisa dimuat.' : null;
     });
+  }
+
+  Future<void> _logout() async {
+    setState(() {
+      _loggingOut = true;
+    });
+    await _authRepo.logout();
+    if (!mounted) return;
+    setState(() {
+      _loggingOut = false;
+    });
+    Navigator.of(context).pushNamedAndRemoveUntil(
+      LoginPage.routeName,
+      (route) => false,
+    );
   }
 
   String? _resolveImage(String path) {
@@ -181,6 +198,27 @@ class _ProfilePageState extends State<ProfilePage> {
                               'Edit Profile',
                               style: theme.textTheme.labelLarge?.copyWith(
                                 color: Colors.white,
+                                fontWeight: FontWeight.w700,
+                              ),
+                            ),
+                          ),
+                        ),
+                        const SizedBox(height: 12),
+                        SizedBox(
+                          width: double.infinity,
+                          child: OutlinedButton(
+                            onPressed: _loggingOut ? null : _logout,
+                            style: OutlinedButton.styleFrom(
+                              padding: const EdgeInsets.symmetric(vertical: 14),
+                              shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(12)),
+                              side: BorderSide(
+                                  color: ProfilePage._baseBlue.withOpacity(0.35)),
+                            ),
+                            child: Text(
+                              _loggingOut ? 'Logging out...' : 'Logout',
+                              style: theme.textTheme.labelLarge?.copyWith(
+                                color: ProfilePage._baseBlue,
                                 fontWeight: FontWeight.w700,
                               ),
                             ),
