@@ -268,7 +268,7 @@ class AuthRepository {
         followRedirects: false,
       );
       final res = await http.Response.fromStream(streamed);
-      if (res.statusCode == 302) {
+      if (res.statusCode == 200 || res.statusCode == 302) {
         await fetchProfile();
         return AuthResult.success();
       }
