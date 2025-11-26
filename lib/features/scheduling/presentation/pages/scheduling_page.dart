@@ -5,6 +5,7 @@ import '../../data/datasources/scheduling_api_service.dart';
 import '../../data/models/schedule.dart';
 import '../widgets/schedule_card.dart';
 import '../widgets/schedule_form_dialog.dart';
+import 'schedule_detail_page.dart';
 
 class SchedulingPage extends StatefulWidget {
   const SchedulingPage({
@@ -225,7 +226,7 @@ class _SchedulingPageState extends State<SchedulingPage> {
         title: const Text('Jadwal Pertandingan'),
         backgroundColor: AppColors.pacilBlueDarker2,
       ),
-      backgroundColor: AppColors.pacilBlueLight3,
+      backgroundColor: AppColors.neutral50,
       floatingActionButton: widget.isOrganizer
           ? FloatingActionButton.extended(
               onPressed: () => _openForm(),
@@ -287,6 +288,7 @@ class _SchedulingPageState extends State<SchedulingPage> {
                                   onCompleted: () => _makeCompleted(s),
                                   onReviewable: () =>
                                       _makeReviewable(s),
+                                  onDetail: () => _openDetail(s),
                                 );
                               },
                             ),
@@ -296,6 +298,34 @@ class _SchedulingPageState extends State<SchedulingPage> {
               ),
             ],
           ),
+        ),
+      ),
+    );
+  }
+
+  void _openDetail(Schedule s) {
+    final bool isOwner =
+        s.organizer != null &&
+            widget.currentUsername != null &&
+            s.organizer == widget.currentUsername;
+
+    Navigator.of(context).push(
+      MaterialPageRoute<void>(
+        builder: (_) => ScheduleDetailPage(
+          schedule: s,
+          isOwner: isOwner,
+          onEdit: isOwner
+              ? () {
+                  Navigator.of(context).pop();
+                  _openForm(initial: s);
+                }
+              : null,
+          onDelete: isOwner
+              ? () {
+                  Navigator.of(context).pop();
+                  _confirmDelete(s);
+                }
+              : null,
         ),
       ),
     );
