@@ -22,13 +22,6 @@ class MyApp extends StatelessWidget {
         useMaterial3: true,
       ),
       home: const LoginPage(),
-      routes: {
-        LoginPage.routeName: (_) => const LoginPage(),
-        RegisterPage.routeName: (_) => const RegisterPage(),
-        ProfilePage.routeName: (_) => const ProfilePage(),
-        EditProfilePage.routeName: (_) => const EditProfilePage(),
-        LandingPage.routeName: (_) => const LandingPage(),
-      },
     );
   }
 }

@@ -232,9 +232,10 @@ class _RegisterPageState extends State<RegisterPage> {
                                         if (widget.onLoginTap != null) {
                                           widget.onLoginTap!.call();
                                         } else {
-                                          Navigator.of(context)
-                                              .pushReplacementNamed(
-                                            LoginPage.routeName,
+                                          Navigator.of(context).pushReplacement(
+                                            MaterialPageRoute(
+                                              builder: (_) => const LoginPage(),
+                                            ),
                                           );
                                         }
                                       } else {
@@ -285,9 +286,11 @@ class _RegisterPageState extends State<RegisterPage> {
                                   return;
                                 }
                                 if (!mounted) return;
-                                Navigator.of(
-                                  context,
-                                ).pushReplacementNamed(LoginPage.routeName);
+                                Navigator.of(context).pushReplacement(
+                                  MaterialPageRoute(
+                                    builder: (_) => const LoginPage(),
+                                  ),
+                                );
                               },
                               child: Text(
                                 'Login here',

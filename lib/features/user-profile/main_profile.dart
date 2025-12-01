@@ -59,8 +59,10 @@ class _ProfilePageState extends State<ProfilePage> {
     setState(() {
       _loggingOut = false;
     });
-    Navigator.of(context).pushNamedAndRemoveUntil(
-      LoginPage.routeName,
+    Navigator.of(context).pushAndRemoveUntil(
+      MaterialPageRoute(
+        builder: (_) => const LoginPage(),
+      ),
       (route) => false,
     );
   }
@@ -181,8 +183,11 @@ class _ProfilePageState extends State<ProfilePage> {
                           width: double.infinity,
                           child: FilledButton(
                             onPressed: () async {
-                              await Navigator.of(context)
-                                  .pushNamed(EditProfilePage.routeName);
+                              await Navigator.of(context).push(
+                                MaterialPageRoute(
+                                  builder: (_) => const EditProfilePage(),
+                                ),
+                              );
                               if (mounted) _load();
                             },
                             style: FilledButton.styleFrom(
