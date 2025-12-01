@@ -65,7 +65,18 @@ class DjangoClient {
       if (res.statusCode != 200 && res.statusCode != 302) {
         return false;
       }
-      // _csrfToken will be filled by _extractCsrfFromHtml inside get().
+      // Try to fill CSRF token either from HTML (hidden input) or JSON.
+      // HTML pages (e.g. /users/login/) are handled by _extractCsrfFromHtml in get().
+      if (_csrfToken == null) {
+        try {
+          final decoded = jsonDecode(res.body);
+          if (decoded is Map && decoded['csrfToken'] is String) {
+            _csrfToken = decoded['csrfToken'] as String;
+          }
+        } catch (_) {
+          // ignore non‑JSON responses
+        }
+      }
       return _csrfToken != null;
     }
 
