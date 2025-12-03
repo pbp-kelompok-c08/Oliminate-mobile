@@ -1,44 +1,47 @@
 import 'package:flutter/material.dart';
+import 'package:oliminate_mobile/left_drawer.dart';
+
+const _blueDark2 = Color(0xFF113352);
+const _blueDark1 = Color(0xFF22629E);
+const _blueLight1 = Color(0xFF73B9F9);
+const _redBase = Color(0xFFEA3C43);
+const _redLight1 = Color(0xFFF47479);
 
 class LandingPage extends StatelessWidget {
   const LandingPage({super.key});
 
   static const String routeName = '/landing';
 
-  void _showSnack(BuildContext context, String label) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text('Anda mengklik tombol $label')),
-    );
+  void _notImplemented(String label) {
+    debugPrint('$label: tombol ini belum diimplementasikan');
   }
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-
     return Scaffold(
+      appBar: AppBar(
+        title: const Text("Oliminate"),
+        toolbarHeight: kToolbarHeight,
+      ),
+      drawer: LeftDrawer(),
       backgroundColor: const Color(0xFFF5F7FB),
       body: SafeArea(
         child: SingleChildScrollView(
           child: Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              _HeroSection(),
-              Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
+              const _HeroSection(),
+              Container(
+                transform: Matrix4.translationValues(0, -18, 0),
+                padding: const EdgeInsets.fromLTRB(20, 0, 20, 32),
                 child: Column(
                   children: [
-                    _AboutSection(),
-                    const SizedBox(height: 16),
-                    _ScheduleSection(),
-                    const SizedBox(height: 16),
-                    _TicketCTA(onTap: () => _showSnack(context, 'Beli Tiket Sekarang')),
-                    const SizedBox(height: 16),
-                    _ReviewCTA(onTap: () => _showSnack(context, 'Lihat Review')),
-                    const SizedBox(height: 16),
-                    _ProfileCTA(
-                      onTap: () => _showSnack(context, 'Masuk / Profil'),
-                      theme: theme,
-                    ),
+                    const _AboutSection(),
+                    const SizedBox(height: 20),
+                    const _ScheduleSection(),
+                    const SizedBox(height: 20),
+                    _TicketCallToAction(onTap: () => _notImplemented('Beli tiket')),
+                    const SizedBox(height: 20),
+                    _ReviewCallToAction(onTap: () => _notImplemented('Lihat review')),
                   ],
                 ),
               ),
@@ -51,72 +54,134 @@ class LandingPage extends StatelessWidget {
 }
 
 class _HeroSection extends StatelessWidget {
+  const _HeroSection();
+
   @override
   Widget build(BuildContext context) {
-    return Container(
-      height: 260,
-      width: double.infinity,
-      decoration: const BoxDecoration(
-        gradient: LinearGradient(
-          colors: [Color(0xFF1b2340), Color(0xFF1b2340), Color(0xFF1b2340), Colors.transparent],
-          begin: Alignment.topCenter,
-          end: Alignment.bottomCenter,
-        ),
-      ),
-      child: Center(
-        child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 24),
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Text(
-                'Selamat Datang di Oliminate!',
-                textAlign: TextAlign.center,
-                style: Theme.of(context).textTheme.headlineMedium?.copyWith(
-                      color: Colors.white,
-                      fontWeight: FontWeight.w800,
-                    ),
+    final textTheme = Theme.of(context).textTheme;
+    return SizedBox(
+      height: 360,
+      child: Stack(
+        children: [
+          Positioned.fill(
+            child: Image.asset(
+              'tk web/Oliminate/static/images/banner2.jpg',
+              fit: BoxFit.cover,
+            ),
+          ),
+          Positioned.fill(
+            child: DecoratedBox(
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  colors: [
+                    Colors.black.withOpacity(0.85),
+                    Colors.black.withOpacity(0.45),
+                    Colors.black.withOpacity(0.1),
+                    Colors.transparent,
+                  ],
+                  begin: Alignment.topCenter,
+                  end: Alignment.bottomCenter,
+                  stops: const [0, 0.55, 0.8, 1],
+                ),
               ),
-              const SizedBox(height: 12),
-              Text(
-                'Temukan dan beli tiket pertandingan favoritmu!',
-                textAlign: TextAlign.center,
-                style: Theme.of(context).textTheme.titleMedium?.copyWith(
+            ),
+          ),
+          Align(
+            alignment: Alignment.center,
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 26),
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  _GradientText(
+                    'Selamat Datang di Oliminate!',
+                    gradient: const LinearGradient(
+                      colors: [_blueLight1, _redLight1],
+                      begin: Alignment.centerLeft,
+                      end: Alignment.centerRight,
+                    ),
+                    style: textTheme.headlineMedium?.copyWith(
+                      fontWeight: FontWeight.w800,
+                      letterSpacing: 0.5,
+                    ),
+                  ),
+                  const SizedBox(height: 12),
+                  Text(
+                    'Temukan dan beli tiket pertandingan favoritmu!',
+                    textAlign: TextAlign.center,
+                    style: textTheme.titleMedium?.copyWith(
                       color: Colors.white,
                       fontWeight: FontWeight.w600,
+                      shadows: const [
+                        Shadow(
+                          color: Colors.black54,
+                          offset: Offset(0, 2),
+                          blurRadius: 8,
+                        ),
+                      ],
                     ),
+                  ),
+                ],
               ),
-            ],
+            ),
           ),
-        ),
+          Align(
+            alignment: Alignment.bottomCenter,
+            child: Container(
+              height: 60,
+              decoration: const BoxDecoration(
+                gradient: LinearGradient(
+                  colors: [
+                    Colors.transparent,
+                    Color(0xFFF5F7FB),
+                  ],
+                  begin: Alignment.topCenter,
+                  end: Alignment.bottomCenter,
+                ),
+              ),
+            ),
+          ),
+        ],
       ),
     );
   }
 }
 
 class _AboutSection extends StatelessWidget {
+  const _AboutSection();
+
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    return Card(
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)),
-      elevation: 4,
+    return _SectionContainer(
       child: LayoutBuilder(
         builder: (context, constraints) {
-          final isNarrow = constraints.maxWidth < 600;
+          final isWide = constraints.maxWidth > 620;
+          final illustration = ClipRRect(
+            borderRadius: BorderRadius.circular(18),
+            child: Image.asset(
+              'tk web/Oliminate/static/images/gambar1.png',
+              width: 140,
+              height: 140,
+              fit: BoxFit.cover,
+            ),
+          );
 
-          // 1. BUKAN Expanded di sini, cukup Column biasa
-          final textColumn = Column(
+          final textBlock = Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text(
+              _GradientText(
                 'Tentang Kami',
+                gradient: const LinearGradient(
+                  colors: [_blueDark1, _redBase],
+                  begin: Alignment.centerLeft,
+                  end: Alignment.centerRight,
+                ),
                 style: theme.textTheme.headlineSmall?.copyWith(
-                  color: const Color(0xFF1f3b6f),
                   fontWeight: FontWeight.w800,
                 ),
               ),
-              const SizedBox(height: 8),
+              const SizedBox(height: 10),
               Text.rich(
                 TextSpan(
                   text:
@@ -125,7 +190,7 @@ class _AboutSection extends StatelessWidget {
                     TextSpan(
                       text: 'Kelompok C08',
                       style: const TextStyle(
-                        color: Colors.red,
+                        color: _redBase,
                         fontWeight: FontWeight.w700,
                       ),
                     ),
@@ -135,55 +200,32 @@ class _AboutSection extends StatelessWidget {
                     ),
                   ],
                 ),
-                style: theme.textTheme.bodyLarge?.copyWith(height: 1.5),
+                style: theme.textTheme.bodyLarge?.copyWith(
+                  color: _blueDark2,
+                  height: 1.5,
+                ),
               ),
             ],
           );
 
-          final illustration = Container(
-            width: 140,
-            height: 140,
-            decoration: BoxDecoration(
-              borderRadius: BorderRadius.circular(16),
-              gradient: const LinearGradient(
-                colors: [Color(0xFFf97316), Color(0xFFec4899)],
-                begin: Alignment.topLeft,
-                end: Alignment.bottomRight,
-              ),
-            ),
-            child: const Icon(
-              Icons.sports_volleyball,
-              color: Colors.white,
-              size: 80,
-            ),
-          );
-
-          if (isNarrow) {
-            // 2. Di mobile: teks di atas, ilustrasi di bawah
-            return Padding(
-              padding: const EdgeInsets.all(18),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  textColumn,
-                  const SizedBox(height: 16),
-                  Center(child: illustration),
-                ],
-              ),
+          if (isWide) {
+            return Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Expanded(child: textBlock),
+                const SizedBox(width: 20),
+                illustration,
+              ],
             );
           }
 
-          // 3. Di lebar: teks + ilustrasi sejajar, teks dibungkus Expanded DI SINI
-          return Padding(
-            padding: const EdgeInsets.all(18),
-            child: Row(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Expanded(child: textColumn),
-                const SizedBox(width: 12),
-                illustration,
-              ],
-            ),
+          return Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              textBlock,
+              const SizedBox(height: 16),
+              Center(child: illustration),
+            ],
           );
         },
       ),
@@ -191,188 +233,392 @@ class _AboutSection extends StatelessWidget {
   }
 }
 
-
 class _ScheduleSection extends StatelessWidget {
+  const _ScheduleSection();
+
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    return Card(
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)),
-      elevation: 2,
-      child: Padding(
-        padding: const EdgeInsets.all(18),
-        child: Column(
-          children: [
-            Text(
+    return _SectionContainer(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Center(
+            child: _GradientText(
               'Jadwal Terdekat',
+              gradient: const LinearGradient(
+                colors: [_blueDark1, _redBase],
+                begin: Alignment.centerLeft,
+                end: Alignment.centerRight,
+              ),
               style: theme.textTheme.headlineSmall?.copyWith(
                 fontWeight: FontWeight.w800,
-                foreground: Paint()
-                  ..shader = const LinearGradient(
-                    colors: [Color(0xFF1f4c8f), Color(0xFF8b1a3d)],
-                  ).createShader(const Rect.fromLTWH(0, 0, 200, 20)),
               ),
             ),
-            const SizedBox(height: 8),
+          ),
+          const SizedBox(height: 8),
+          if (_mockSchedules.isEmpty)
             Text(
               'Belum ada jadwal upcoming.',
-              style: theme.textTheme.bodyMedium?.copyWith(color: const Color(0xFF4B5563)),
+              textAlign: TextAlign.center,
+              style: theme.textTheme.bodyMedium?.copyWith(color: Colors.grey[600]),
+            )
+          else
+            SizedBox(
+              height: 340,
+              child: ListView.separated(
+                scrollDirection: Axis.horizontal,
+                padding: const EdgeInsets.symmetric(vertical: 12),
+                physics: const BouncingScrollPhysics(),
+                itemBuilder: (context, index) {
+                  final data = _mockSchedules[index];
+                  return _ScheduleCard(data: data);
+                },
+                separatorBuilder: (_, __) => const SizedBox(width: 16),
+                itemCount: _mockSchedules.length,
+              ),
             ),
-          ],
-        ),
+        ],
       ),
     );
   }
 }
 
-class _TicketCTA extends StatelessWidget {
-  const _TicketCTA({required this.onTap});
+class _ScheduleCard extends StatelessWidget {
+  const _ScheduleCard({required this.data});
+
+  final _ScheduleCardData data;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    return Container(
+      width: 250,
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(22),
+        boxShadow: const [
+          BoxShadow(
+            color: Color(0x1A000000),
+            blurRadius: 18,
+            offset: Offset(0, 12),
+          ),
+        ],
+        color: Colors.white,
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          ClipRRect(
+            borderRadius: const BorderRadius.vertical(top: Radius.circular(22)),
+            child: Image.asset(
+              data.imagePath,
+              height: 130,
+              width: double.infinity,
+              fit: BoxFit.cover,
+            ),
+          ),
+          Padding(
+            padding: const EdgeInsets.all(16),
+            child: DefaultTextStyle(
+              style: theme.textTheme.bodyMedium!.copyWith(color: _blueDark2),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    data.matchTitle,
+                    style: theme.textTheme.titleMedium?.copyWith(
+                      fontWeight: FontWeight.w700,
+                      color: _blueDark2,
+                    ),
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    data.category.toUpperCase(),
+                    style: theme.textTheme.labelLarge?.copyWith(
+                      color: Colors.grey[600],
+                      letterSpacing: 0.8,
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  Text('📅 ${data.date}'),
+                  Text('🕒 ${data.time}'),
+                  Text('📍 ${data.location}'),
+                ],
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _TicketCallToAction extends StatelessWidget {
+  const _TicketCallToAction({required this.onTap});
 
   final VoidCallback onTap;
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    return Card(
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)),
-      elevation: 2,
-      child: Padding(
-        padding: const EdgeInsets.all(18),
-        child: Column(
-          children: [
-            Text(
-              'Ingin Dapatkan Tiketmu Sekarang?',
-              textAlign: TextAlign.center,
-              style: theme.textTheme.headlineSmall?.copyWith(
-                fontWeight: FontWeight.w800,
-                color: const Color(0xFF1f3b6f),
-              ),
-            ),
-            const SizedBox(height: 6),
-            Text(
-              'Jangan sampai ketinggalan keseruan pertandingan favoritmu!',
-              textAlign: TextAlign.center,
-              style: theme.textTheme.bodyMedium?.copyWith(color: const Color(0xFF4B5563)),
-            ),
-            const SizedBox(height: 12),
-            ElevatedButton.icon(
-              onPressed: onTap,
-              style: ElevatedButton.styleFrom(
-                backgroundColor: const Color(0xFFF95D6A),
-                foregroundColor: Colors.white,
-                padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 12),
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                elevation: 4,
-              ),
-              icon: const Icon(Icons.confirmation_number),
-              label: const Text('Beli Tiket Sekarang'),
-            ),
-            const SizedBox(height: 12),
-            Container(
-              width: 120,
-              height: 120,
-              decoration: BoxDecoration(
-                borderRadius: BorderRadius.circular(24),
-                color: const Color(0xFFFFF7D6),
-              ),
-              child: const Icon(
-                Icons.confirmation_number,
-                color: Color(0xFFF59E0B),
-                size: 72,
-              ),
-            ),
-          ],
+    final illustration = ClipRRect(
+      borderRadius: BorderRadius.circular(18),
+      child: Image.asset(
+        'tk web/Oliminate/static/images/gambar3.png',
+        width: 180,
+        height: 180,
+        fit: BoxFit.cover,
+      ),
+    );
+
+    final textBlock = Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          'Ingin Dapatkan Tiketmu Sekarang?',
+          style: theme.textTheme.headlineSmall?.copyWith(
+            fontWeight: FontWeight.w800,
+            color: _blueDark2,
+          ),
         ),
+        const SizedBox(height: 8),
+        Text(
+          'Jangan sampai ketinggalan keseruan pertandingan favoritmu!',
+          style: theme.textTheme.bodyLarge?.copyWith(color: Colors.grey[700]),
+        ),
+        const SizedBox(height: 16),
+        ElevatedButton.icon(
+          onPressed: onTap,
+          style: ElevatedButton.styleFrom(
+            backgroundColor: _redLight1,
+            foregroundColor: Colors.white,
+            padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+            elevation: 6,
+          ),
+          icon: const Text('🎟️', style: TextStyle(fontSize: 20)),
+          label: const Text(
+            'Beli Tiket Sekarang',
+            style: TextStyle(fontWeight: FontWeight.w700),
+          ),
+        ),
+      ],
+    );
+
+    return _SectionContainer(
+      child: LayoutBuilder(
+        builder: (context, constraints) {
+          final isWide = constraints.maxWidth > 620;
+          if (isWide) {
+            return Row(
+              crossAxisAlignment: CrossAxisAlignment.center,
+              children: [
+                Expanded(child: textBlock),
+                const SizedBox(width: 24),
+                illustration,
+              ],
+            );
+          }
+
+          return Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              textBlock,
+              const SizedBox(height: 20),
+              Center(child: illustration),
+            ],
+          );
+        },
       ),
     );
   }
 }
 
-class _ReviewCTA extends StatelessWidget {
-  const _ReviewCTA({required this.onTap});
+class _ReviewCallToAction extends StatelessWidget {
+  const _ReviewCallToAction({required this.onTap});
 
   final VoidCallback onTap;
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    return Card(
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)),
-      elevation: 2,
-      child: Padding(
-        padding: const EdgeInsets.all(18),
-        child: Column(
-          children: [
-            Container(
-              width: 110,
-              height: 110,
-              decoration: BoxDecoration(
-                borderRadius: BorderRadius.circular(24),
-                color: const Color(0xFFFFF7E0),
-              ),
-              child: const Icon(
-                Icons.emoji_events,
-                color: Color(0xFFFBBF24),
-                size: 64,
-              ),
-            ),
-            const SizedBox(height: 8),
-            Text(
-              'Lihat Review dari Penonton Lain!',
-              textAlign: TextAlign.center,
-              style: theme.textTheme.headlineSmall?.copyWith(
-                fontWeight: FontWeight.w800,
-                color: const Color(0xFF1f3b6f),
-              ),
-            ),
-            const SizedBox(height: 6),
-            Text(
-              'Ketahui pengalaman mereka sebelum kamu datang ke event berikutnya.',
-              textAlign: TextAlign.center,
-              style: theme.textTheme.bodyMedium?.copyWith(color: const Color(0xFF4B5563)),
-            ),
-            const SizedBox(height: 12),
-            ElevatedButton.icon(
-              onPressed: onTap,
-              style: ElevatedButton.styleFrom(
-                backgroundColor: const Color(0xFFF95D6A),
-                foregroundColor: Colors.white,
-                padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 12),
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                elevation: 4,
-              ),
-              icon: const Icon(Icons.star),
-              label: const Text('Lihat Review'),
-            ),
-          ],
+    final illustration = ClipRRect(
+      borderRadius: BorderRadius.circular(18),
+      child: Image.asset(
+        'tk web/Oliminate/static/images/gambar4.png',
+        width: 180,
+        height: 180,
+        fit: BoxFit.cover,
+      ),
+    );
+
+    final textBlock = Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          'Lihat Review dari Penonton Lain!',
+          style: theme.textTheme.headlineSmall?.copyWith(
+            fontWeight: FontWeight.w800,
+            color: _blueDark2,
+          ),
         ),
+        const SizedBox(height: 8),
+        Text(
+          'Ketahui pengalaman mereka sebelum kamu datang ke event berikutnya.',
+          style: theme.textTheme.bodyLarge?.copyWith(color: Colors.grey[700]),
+        ),
+        const SizedBox(height: 16),
+        ElevatedButton.icon(
+          onPressed: onTap,
+          style: ElevatedButton.styleFrom(
+            backgroundColor: _redLight1,
+            foregroundColor: Colors.white,
+            padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+            elevation: 6,
+          ),
+          icon: const Text('⭐', style: TextStyle(fontSize: 18)),
+          label: const Text(
+            'Lihat Review',
+            style: TextStyle(fontWeight: FontWeight.w700),
+          ),
+        ),
+      ],
+    );
+
+    return _SectionContainer(
+      child: LayoutBuilder(
+        builder: (context, constraints) {
+          final isWide = constraints.maxWidth > 620;
+          if (isWide) {
+            return Row(
+              crossAxisAlignment: CrossAxisAlignment.center,
+              children: [
+                illustration,
+                const SizedBox(width: 24),
+                Expanded(child: textBlock),
+              ],
+            );
+          }
+
+          return Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Center(child: illustration),
+              const SizedBox(height: 20),
+              textBlock,
+            ],
+          );
+        },
       ),
     );
   }
 }
 
-class _ProfileCTA extends StatelessWidget {
-  const _ProfileCTA({required this.onTap, required this.theme});
+class _SectionContainer extends StatelessWidget {
+  const _SectionContainer({required this.child});
 
-  final VoidCallback onTap;
-  final ThemeData theme;
+  final Widget child;
 
   @override
   Widget build(BuildContext context) {
-    return OutlinedButton(
-      onPressed: onTap,
-      style: OutlinedButton.styleFrom(
-        padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 14),
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-        side: BorderSide(color: const Color(0xFF3293ec).withOpacity(0.5)),
+    return Container(
+      width: double.infinity,
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(28),
+        boxShadow: const [
+          BoxShadow(
+            color: Color(0x11000000),
+            blurRadius: 24,
+            offset: Offset(0, 10),
+          ),
+        ],
       ),
+      padding: const EdgeInsets.all(20),
+      child: child,
+    );
+  }
+}
+
+class _GradientText extends StatelessWidget {
+  const _GradientText(this.text, {required this.gradient, this.style});
+
+  final String text;
+  final Gradient gradient;
+  final TextStyle? style;
+
+  @override
+  Widget build(BuildContext context) {
+    final textStyle = (style ?? Theme.of(context).textTheme.bodyLarge)?.copyWith(color: Colors.white);
+    return ShaderMask(
+      shaderCallback: (rect) => gradient.createShader(rect),
       child: Text(
-        'Masuk / Profil',
-        style: theme.textTheme.titleMedium?.copyWith(
-          color: const Color(0xFF3293ec),
-          fontWeight: FontWeight.w700,
-        ),
+        text,
+        textAlign: TextAlign.center,
+        style: textStyle,
       ),
     );
   }
 }
+
+class _ScheduleCardData {
+  const _ScheduleCardData({
+    required this.team1,
+    required this.team2,
+    required this.category,
+    required this.date,
+    required this.time,
+    required this.location,
+    required this.imagePath,
+  });
+
+  final String team1;
+  final String team2;
+  final String category;
+  final String date;
+  final String time;
+  final String location;
+  final String imagePath;
+
+  String get matchTitle => '$team1 vs $team2';
+}
+
+const List<_ScheduleCardData> _mockSchedules = [
+  _ScheduleCardData(
+    team1: 'Garuda United',
+    team2: 'Harimau Muda',
+    category: 'Sepak Bola',
+    date: '12 Okt 2024',
+    time: '18:00 WIB',
+    location: 'Jakarta International Stadium',
+    imagePath: 'tk web/Oliminate/static/images/sepak_bola.png',
+  ),
+  _ScheduleCardData(
+    team1: 'Blue Fire',
+    team2: 'Angkasa',
+    category: 'Basket',
+    date: '15 Okt 2024',
+    time: '16:30 WIB',
+    location: 'Istora Senayan',
+    imagePath: 'tk web/Oliminate/static/images/basket.png',
+  ),
+  _ScheduleCardData(
+    team1: 'Rivaldo',
+    team2: 'Satria',
+    category: 'Voli',
+    date: '18 Okt 2024',
+    time: '14:00 WIB',
+    location: 'GOR Temuguruh',
+    imagePath: 'tk web/Oliminate/static/images/voli.png',
+  ),
+  _ScheduleCardData(
+    team1: 'Smash ID',
+    team2: 'Feather',
+    category: 'Badminton',
+    date: '22 Okt 2024',
+    time: '19:30 WIB',
+    location: 'GOR Cendrawasih',
+    imagePath: 'tk web/Oliminate/static/images/badminton.png',
+  ),
+];
