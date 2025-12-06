@@ -1,6 +1,53 @@
 import 'package:flutter/material.dart';
+import 'dart:convert';
+import 'package:http/http.dart' as http;
 
-// Model Dummy
+// Schedule Model (from API)
+class Schedule {
+  final int id;
+  final String category;
+  final String team1;
+  final String team2;
+  final String location;
+  final String date;
+  final String time;
+  final String status;
+  final String? imageUrl;
+  final String? caption;
+
+  Schedule({
+    required this.id,
+    required this.category,
+    required this.team1,
+    required this.team2,
+    required this.location,
+    required this.date,
+    required this.time,
+    required this.status,
+    this.imageUrl,
+    this.caption,
+  });
+
+  factory Schedule.fromJson(Map<String, dynamic> json) {
+    return Schedule(
+      id: json['id'],
+      category: json['category'],
+      team1: json['team1'],
+      team2: json['team2'],
+      location: json['location'],
+      date: json['date'],
+      time: json['time'],
+      status: json['status'],
+      imageUrl: json['image_url'],
+      caption: json['caption'],
+    );
+  }
+
+  String get eventName => "${category.toUpperCase()}: $team1 vs $team2";
+  String get formattedSchedule => "$date | ${time.substring(0, 5)}";
+}
+
+// Ticket Model (for display)
 class Ticket {
   final String id;
   final String eventName;
@@ -35,32 +82,60 @@ class _TicketingPageState extends State<TicketingPage> {
   final Color _textDark = const Color(0xFF1A1A1A);
   final Color _textGrey = const Color(0xFF7D7D7D);
 
-  final List<Ticket> _allTickets = [
-    Ticket(
-      id: "101",
-      eventName: "FUTSAL: FASILKOM vs FT",
-      schedule: "24 Nov 2025 | 18:30",
-      price: 45000,
-      status: 'paid',
-      isUsed: true,
-    ),
-    Ticket(
-      id: "102",
-      eventName: "BASKET: FISIP vs FKM",
-      schedule: "25 Nov 2025 | 20:00",
-      price: 50000,
-      status: 'paid',
-      isUsed: false,
-    ),
-    Ticket(
-      id: "105",
-      eventName: "VALORANT: MIPA vs VOKASI",
-      schedule: "26 Nov 2025 | 19:00",
-      price: 35000,
-      status: 'unpaid',
-      isUsed: false,
-    ),
-  ];
+  // API Base URL - change this to your backend URL
+  // Use localhost for Chrome/web testing
+  // Use 10.0.2.2 for Android emulator
+  // Use your actual IP for physical device
+  static const String baseUrl = 'http://localhost:8000';
+
+  // State for schedules
+  List<Schedule> _schedules = [];
+  bool _isLoadingSchedules = false;
+  String? _schedulesError;
+
+  // Tickets list - will be fetched from API
+  final List<Ticket> _allTickets = [];
+
+  @override
+  void initState() {
+    super.initState();
+    _fetchSchedules();
+  }
+
+  // Fetch schedules from API
+  Future<void> _fetchSchedules() async {
+    setState(() {
+      _isLoadingSchedules = true;
+      _schedulesError = null;
+    });
+
+    try {
+      final response = await http.get(
+        Uri.parse('$baseUrl/ticketing/schedules/json/'),
+      );
+
+      if (response.statusCode == 200) {
+        final data = json.decode(response.body);
+        final List<dynamic> schedulesJson = data['schedules'];
+        setState(() {
+          _schedules = schedulesJson
+              .map((json) => Schedule.fromJson(json))
+              .toList();
+          _isLoadingSchedules = false;
+        });
+      } else {
+        setState(() {
+          _schedulesError = 'Failed to load schedules: ${response.statusCode}';
+          _isLoadingSchedules = false;
+        });
+      }
+    } catch (e) {
+      setState(() {
+        _schedulesError = 'Connection error: $e';
+        _isLoadingSchedules = false;
+      });
+    }
+  }
 
   // --- FUNGSI MANUAL FORMAT RUPIAH (PENGGANTI INTL) ---
   String formatRupiah(double price) {
@@ -110,9 +185,7 @@ class _TicketingPageState extends State<TicketingPage> {
                 ),
                 ElevatedButton.icon(
                   onPressed: () {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(content: Text("Buka form beli tiket...")),
-                    );
+                    _showBuyTicketDialog(context);
                   },
                   icon: const Icon(Icons.add, size: 18),
                   label: const Text("Beli Tiket"),
@@ -162,6 +235,252 @@ class _TicketingPageState extends State<TicketingPage> {
               ),
           ],
         ),
+      ),
+    );
+  }
+
+  // Dialog to buy ticket with schedules from API
+  void _showBuyTicketDialog(BuildContext context) {
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (context) => Container(
+        height: MediaQuery.of(context).size.height * 0.75,
+        decoration: const BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.only(
+            topLeft: Radius.circular(20),
+            topRight: Radius.circular(20),
+          ),
+        ),
+        child: Column(
+          children: [
+            // Handle bar
+            Container(
+              margin: const EdgeInsets.only(top: 12),
+              width: 40,
+              height: 4,
+              decoration: BoxDecoration(
+                color: Colors.grey[300],
+                borderRadius: BorderRadius.circular(2),
+              ),
+            ),
+            // Title
+            Padding(
+              padding: const EdgeInsets.all(16.0),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Text(
+                    "Pilih Jadwal",
+                    style: TextStyle(
+                      fontSize: 20,
+                      fontWeight: FontWeight.bold,
+                      color: _textDark,
+                    ),
+                  ),
+                  IconButton(
+                    onPressed: () => Navigator.pop(context),
+                    icon: const Icon(Icons.close),
+                  ),
+                ],
+              ),
+            ),
+            const Divider(height: 1),
+            // Content
+            Expanded(
+              child: _isLoadingSchedules
+                  ? const Center(child: CircularProgressIndicator())
+                  : _schedulesError != null
+                      ? Center(
+                          child: Column(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              Icon(Icons.error_outline, size: 48, color: Colors.red[300]),
+                              const SizedBox(height: 16),
+                              Text(_schedulesError!, textAlign: TextAlign.center),
+                              const SizedBox(height: 16),
+                              ElevatedButton(
+                                onPressed: _fetchSchedules,
+                                child: const Text("Coba Lagi"),
+                              ),
+                            ],
+                          ),
+                        )
+                      : _schedules.isEmpty
+                          ? const Center(
+                              child: Text("Tidak ada jadwal tersedia"),
+                            )
+                          : ListView.builder(
+                              padding: const EdgeInsets.all(16),
+                              itemCount: _schedules.length,
+                              itemBuilder: (context, index) {
+                                final schedule = _schedules[index];
+                                return _buildScheduleCard(schedule);
+                              },
+                            ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildScheduleCard(Schedule schedule) {
+    Color statusColor;
+    String statusText;
+    
+    switch (schedule.status) {
+      case 'upcoming':
+        statusColor = Colors.green;
+        statusText = 'Upcoming';
+        break;
+      case 'completed':
+        statusColor = Colors.grey;
+        statusText = 'Selesai';
+        break;
+      case 'reviewable':
+        statusColor = Colors.blue;
+        statusText = 'Reviewable';
+        break;
+      default:
+        statusColor = Colors.grey;
+        statusText = schedule.status;
+    }
+
+    return Card(
+      margin: const EdgeInsets.only(bottom: 12),
+      elevation: 2,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+      child: InkWell(
+        onTap: schedule.status == 'upcoming' ? () {
+          Navigator.pop(context);
+          _confirmTicketPurchase(schedule);
+        } : null,
+        borderRadius: BorderRadius.circular(12),
+        child: Padding(
+          padding: const EdgeInsets.all(16),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Expanded(
+                    child: Text(
+                      schedule.eventName,
+                      style: TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.bold,
+                        color: _textDark,
+                      ),
+                    ),
+                  ),
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                    decoration: BoxDecoration(
+                      color: statusColor.withOpacity(0.1),
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: Text(
+                      statusText,
+                      style: TextStyle(
+                        color: statusColor,
+                        fontSize: 12,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 8),
+              Row(
+                children: [
+                  Icon(Icons.calendar_today, size: 14, color: _textGrey),
+                  const SizedBox(width: 4),
+                  Text(
+                    schedule.formattedSchedule,
+                    style: TextStyle(fontSize: 13, color: _textGrey),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 4),
+              Row(
+                children: [
+                  Icon(Icons.location_on, size: 14, color: _textGrey),
+                  const SizedBox(width: 4),
+                  Text(
+                    schedule.location,
+                    style: TextStyle(fontSize: 13, color: _textGrey),
+                  ),
+                ],
+              ),
+              if (schedule.status == 'upcoming') ...[
+                const SizedBox(height: 12),
+                SizedBox(
+                  width: double.infinity,
+                  child: ElevatedButton(
+                    onPressed: () {
+                      Navigator.pop(context);
+                      _confirmTicketPurchase(schedule);
+                    },
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: _pacilBlue,
+                      foregroundColor: Colors.white,
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                    ),
+                    child: const Text("Beli Tiket"),
+                  ),
+                ),
+              ],
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  void _confirmTicketPurchase(Schedule schedule) {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text("Konfirmasi Pembelian"),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text("Event: ${schedule.eventName}"),
+            const SizedBox(height: 8),
+            Text("Tanggal: ${schedule.formattedSchedule}"),
+            Text("Lokasi: ${schedule.location}"),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text("Batal"),
+          ),
+          ElevatedButton(
+            onPressed: () {
+              Navigator.pop(context);
+              // TODO: Implement actual purchase via buy_ticket_flutter API
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(
+                  content: Text("Tiket untuk ${schedule.eventName} berhasil dibeli!"),
+                  backgroundColor: Colors.green,
+                ),
+              );
+            },
+            style: ElevatedButton.styleFrom(
+              backgroundColor: _pacilBlue,
+              foregroundColor: Colors.white,
+            ),
+            child: const Text("Beli"),
+          ),
+        ],
       ),
     );
   }
