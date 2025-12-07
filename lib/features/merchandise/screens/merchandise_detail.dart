@@ -10,8 +10,9 @@ class MerchandiseDetailScreen extends StatefulWidget {
   // and the endpoint is merchandise/cart/add/<uuid:merchandise_id>/
   final String baseUrl = 'http://localhost:8000';
   final Merchandise merchandise;
+  final String? userRole;
 
-  const MerchandiseDetailScreen({super.key, required this.merchandise});
+  const MerchandiseDetailScreen({super.key, required this.merchandise, required this.userRole});
 
   @override
   State<MerchandiseDetailScreen> createState() => _MerchandiseDetailScreenState();
@@ -192,81 +193,82 @@ class _MerchandiseDetailScreenState extends State<MerchandiseDetailScreen> {
             ),
             const SizedBox(height: 30),
 
-            // --- Quantity Selector & Add to Cart Button ---
-            Container(
-              padding: const EdgeInsets.all(16.0),
-              decoration: BoxDecoration(
-                color: Colors.blue.shade50,
-                borderRadius: BorderRadius.circular(12.0),
-              ),
-              child: Row(
-                children: [
-                  // Quantity Selector
-                  if (isStockAvailable)
-                    Row(
-                      children: [
-                        const Text('Jumlah:', style: TextStyle(fontSize: 16)),
-                        const SizedBox(width: 8),
-                        _buildQuantityButton(Icons.remove, () {
-                          if (_selectedQuantity > 1) {
-                            setState(() {
-                              _selectedQuantity--;
-                            });
-                          }
-                        }),
-                        Padding(
-                          padding: const EdgeInsets.symmetric(horizontal: 12.0),
-                          child: Text(
-                            '$_selectedQuantity',
-                            style: const TextStyle(
-                                fontSize: 18, fontWeight: FontWeight.bold),
+            if (widget.userRole?.toLowerCase() == 'user')
+              // --- Quantity Selector & Add to Cart Button ---
+              Container(
+                padding: const EdgeInsets.all(16.0),
+                decoration: BoxDecoration(
+                  color: Colors.blue.shade50,
+                  borderRadius: BorderRadius.circular(12.0),
+                ),
+                child: Row(
+                  children: [
+                    // Quantity Selector
+                    if (isStockAvailable)
+                      Row(
+                        children: [
+                          const Text('Jumlah:', style: TextStyle(fontSize: 16)),
+                          const SizedBox(width: 8),
+                          _buildQuantityButton(Icons.remove, () {
+                            if (_selectedQuantity > 1) {
+                              setState(() {
+                                _selectedQuantity--;
+                              });
+                            }
+                          }),
+                          Padding(
+                            padding: const EdgeInsets.symmetric(horizontal: 12.0),
+                            child: Text(
+                              '$_selectedQuantity',
+                              style: const TextStyle(
+                                  fontSize: 18, fontWeight: FontWeight.bold),
+                            ),
+                          ),
+                          _buildQuantityButton(Icons.add, () {
+                            if (_selectedQuantity < widget.merchandise.stock) {
+                              setState(() {
+                                _selectedQuantity++;
+                              });
+                            }
+                          }),
+                        ],
+                      ),
+                    const Spacer(),
+
+                    // Add to Cart Button
+                    Expanded(
+                      child: ElevatedButton(
+                        onPressed: isStockAvailable && !_isAddingToCart
+                            ? _addToCart
+                            : null,
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: isStockAvailable
+                              ? const Color(0xFF1E3A8A)
+                              : Colors.grey,
+                          padding: const EdgeInsets.symmetric(vertical: 12),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(8),
                           ),
                         ),
-                        _buildQuantityButton(Icons.add, () {
-                          if (_selectedQuantity < widget.merchandise.stock) {
-                            setState(() {
-                              _selectedQuantity++;
-                            });
-                          }
-                        }),
-                      ],
-                    ),
-                  const Spacer(),
-
-                  // Add to Cart Button
-                  Expanded(
-                    child: ElevatedButton(
-                      onPressed: isStockAvailable && !_isAddingToCart
-                          ? _addToCart
-                          : null,
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: isStockAvailable
-                            ? const Color(0xFF1E3A8A)
-                            : Colors.grey,
-                        padding: const EdgeInsets.symmetric(vertical: 12),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(8),
-                        ),
-                      ),
-                      child: _isAddingToCart
-                          ? const SizedBox(
-                              height: 20,
-                              width: 20,
-                              child: CircularProgressIndicator(
-                                color: Colors.white,
-                                strokeWidth: 2,
+                        child: _isAddingToCart
+                            ? const SizedBox(
+                                height: 20,
+                                width: 20,
+                                child: CircularProgressIndicator(
+                                  color: Colors.white,
+                                  strokeWidth: 2,
+                                ),
+                              )
+                            : Text(
+                                isStockAvailable ? 'Tambah ke Keranjang' : 'Stok Habis',
+                                style: const TextStyle(
+                                    fontSize: 16, color: Colors.white),
                               ),
-                            )
-                          : Text(
-                              isStockAvailable ? 'Tambah ke Keranjang' : 'Stok Habis',
-                              style: const TextStyle(
-                                  fontSize: 16, color: Colors.white),
-                            ),
+                      ),
                     ),
-                  ),
-                ],
+                  ],
+                ),
               ),
-            ),
           ],
         ),
       ),

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'package:oliminate_mobile/features/merchandise/screens/merchandise_form_page.dart';
+import 'package:oliminate_mobile/features/user-profile/auth_repository.dart';
 import 'package:oliminate_mobile/left_drawer.dart';
 import 'dart:convert';
 import '../models/merchandise_model.dart'; // Import the new model file
@@ -24,16 +25,41 @@ class _MerchandisePageState extends State<MerchandisePage> {
   bool isLoading = true;
   String? currentSort; 
   String? currentCategory; 
+  final _authRepo = AuthRepository.instance;
+  bool isLoggedIn = false;
+  String? userRole;
+  String? userName;
   
   // PLACEHOLDER: Set this to true to see the Edit/Delete buttons.
   // In a real app, this should be set after checking the user's role post-login.
-  final bool _isOrganizer = true; 
+  // final bool _isOrganizer = true; 
 
   @override
   void initState() {
     super.initState();
     categoryChoices = [CategoryChoice(value: '', label: 'All Categories')];
-    fetchMerchandise();
+    _loadAuthState().then((_) => fetchMerchandise());
+  }
+
+  Future<void> _loadAuthState() async {
+    await _authRepo.init(); // restores cookies
+    final ok = await _authRepo.validateSession(); // sets cachedProfile on success
+    if (!mounted) return;
+    if (!ok) {
+      setState(() {
+        isLoggedIn = false;
+        userRole = null;
+      });
+      return;
+    }
+    // cachedProfile should now be available (validateSession calls _parseProfile)
+    final p = _authRepo.cachedProfile ?? await _authRepo.fetchProfile();
+    if (!mounted) return;
+    setState(() {
+      isLoggedIn = p != null;
+      userRole = p?.role?.trim();
+      userName = p?.username?.trim();
+    });
   }
 
   // Fetches data from the Django API with current filters and sort applied
@@ -189,18 +215,7 @@ class _MerchandisePageState extends State<MerchandisePage> {
         title: const Text('Merchandise Catalog'),
         backgroundColor: Colors.blueAccent,
         actions: [
-          IconButton(
-            icon: const Icon(Icons.shopping_cart),
-            onPressed: () {
-              Navigator.push(
-                context,
-                MaterialPageRoute(
-                  builder: (context) => const CartPage(),
-                ),
-              );
-            },
-          ),
-          if (_isOrganizer) // Add a button for creating new items if the user is an organizer
+          if (isLoggedIn && userRole?.toLowerCase() == 'organizer') // Add a button for creating new items if the user is an organizer
             IconButton(
               icon: const Icon(Icons.add_box),
               tooltip: 'Add New Merchandise',
@@ -209,6 +224,18 @@ class _MerchandisePageState extends State<MerchandisePage> {
                   context,
                   MaterialPageRoute(
                     builder: (context) => MerchandiseFormPage(merchandise: null, categoryChoices: categoryChoices),
+                  ),
+                );
+              },
+            )
+          else
+            IconButton(
+              icon: const Icon(Icons.shopping_cart),
+              onPressed: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) => const CartPage(),
                   ),
                 );
               },
@@ -281,7 +308,9 @@ class _MerchandisePageState extends State<MerchandisePage> {
                           return _MerchandiseCard(
                             merch: merchandises[index],
                             baseUrl: baseUrl,
-                            isOrganizer: _isOrganizer, // Pass organizer status
+                            isLoggedIn: isLoggedIn,
+                            userRole: userRole,
+                            userName: userName,
                             onEdit: _editMerchandise, // Pass edit function
                             onDelete: _deleteMerchandise, // Pass delete function
                           );
@@ -299,14 +328,18 @@ class _MerchandisePageState extends State<MerchandisePage> {
 class _MerchandiseCard extends StatefulWidget {
   final Merchandise merch;
   final String baseUrl; 
-  final bool isOrganizer; // NEW
+  final bool isLoggedIn; 
+  final String? userRole;
+  final String? userName;
   final Function(Merchandise) onEdit; // NEW: Callback for editing
   final Function(String, String) onDelete; // NEW: Callback for deleting
 
   const _MerchandiseCard({
     required this.merch, 
     required this.baseUrl, 
-    required this.isOrganizer, 
+    required this.isLoggedIn,
+    required this.userRole,
+    required this.userName,
     required this.onEdit, 
     required this.onDelete,
   });
@@ -494,56 +527,58 @@ class _MerchandiseCardState extends State<_MerchandiseCard> {
                   // Action Buttons (Management or User)
                   Column(
                     children: [
-                      if (widget.isOrganizer) // Show management buttons if organizer
-                        Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceAround,
-                          children: [
-                            Expanded(
-                              child: OutlinedButton.icon(
-                                icon: const Icon(Icons.edit, size: 18),
-                                label: const Text('Edit', style: TextStyle(fontSize: 12)),
-                                onPressed: () => widget.onEdit(widget.merch),
-                                style: OutlinedButton.styleFrom(
-                                  padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 8),
-                                ),
-                              ),
+                      if (widget.isLoggedIn)
+                        if (widget.userRole?.toLowerCase() == 'user') // Show regular user button
+                          ElevatedButton(
+                            onPressed: isStockAvailable && !_isAddingToCart ? _addToCart : null, 
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: isStockAvailable ? Colors.blue : Colors.grey[400],
+                              minimumSize: const Size(double.infinity, 36),
                             ),
-                            const SizedBox(width: 8),
-                            Expanded(
-                              child: OutlinedButton.icon(
-                                icon: const Icon(Icons.delete, size: 18),
-                                label: const Text('Delete', style: TextStyle(fontSize: 12)),
-                                onPressed: () => widget.onDelete(widget.merch.id, widget.merch.name),
-                                style: OutlinedButton.styleFrom(
-                                  foregroundColor: Colors.red,
-                                  side: const BorderSide(color: Colors.red),
-                                  padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 8),
-                                ),
-                              ),
-                            ),
-                          ],
-                        )
-                      else // Show regular user button
-                        ElevatedButton(
-                          onPressed: isStockAvailable && !_isAddingToCart ? _addToCart : null, 
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: isStockAvailable ? Colors.blue : Colors.grey[400],
-                            minimumSize: const Size(double.infinity, 36),
-                          ),
-                          child: _isAddingToCart
-                              ? const SizedBox(
-                                  height: 20,
-                                  width: 20,
-                                  child: CircularProgressIndicator(
-                                    color: Colors.white,
-                                    strokeWidth: 2,
+                            child: _isAddingToCart
+                                ? const SizedBox(
+                                    height: 20,
+                                    width: 20,
+                                    child: CircularProgressIndicator(
+                                      color: Colors.white,
+                                      strokeWidth: 2,
+                                    ),
+                                  )
+                                : Text(
+                                    isStockAvailable ? 'Tambah ke Keranjang' : 'Stok Habis',
+                                    style: TextStyle(color: isStockAvailable ? Colors.white : Colors.black54),
                                   ),
-                                )
-                              : Text(
-                                  isStockAvailable ? 'Tambah ke Keranjang' : 'Stok Habis',
-                                  style: TextStyle(color: isStockAvailable ? Colors.white : Colors.black54),
+                          )
+                        else if (widget.userRole?.toLowerCase() == 'organizer' && widget.userName == widget.merch.organizerUsername)// Show management buttons if organizer
+                          Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceAround,
+                            children: [
+                              Expanded(
+                                child: OutlinedButton.icon(
+                                  icon: const Icon(Icons.edit, size: 18),
+                                  label: const Text('Edit', style: TextStyle(fontSize: 12)),
+                                  onPressed: () => widget.onEdit(widget.merch),
+                                  style: OutlinedButton.styleFrom(
+                                    padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 8),
+                                  ),
                                 ),
-                        ),
+                              ),
+                              const SizedBox(width: 8),
+                              Expanded(
+                                child: OutlinedButton.icon(
+                                  icon: const Icon(Icons.delete, size: 18),
+                                  label: const Text('Delete', style: TextStyle(fontSize: 12)),
+                                  onPressed: () => widget.onDelete(widget.merch.id, widget.merch.name),
+                                  style: OutlinedButton.styleFrom(
+                                    foregroundColor: Colors.red,
+                                    side: const BorderSide(color: Colors.red),
+                                    padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 8),
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
+                        
                         const SizedBox(height: 8),
                         // Detail Button (always present)
                         OutlinedButton(
@@ -552,7 +587,7 @@ class _MerchandiseCardState extends State<_MerchandiseCard> {
                             Navigator.push(
                               context,
                               MaterialPageRoute(
-                                builder: (context) => MerchandiseDetailScreen(merchandise: widget.merch),
+                                builder: (context) => MerchandiseDetailScreen(merchandise: widget.merch, userRole: widget.userRole,),
                               ),
                             );
                           },
