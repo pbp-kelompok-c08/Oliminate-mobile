@@ -7,25 +7,6 @@ import 'package:oliminate_mobile/features/review/data/models/reviewable_schedule
 import 'review_detail_page.dart';
 import '../widgets/review_form.dart'; 
 
-// --- MOCK DATA GLOBAL UNTUK FALLBACK ---
-// Dibuat sebagai final List<ReviewableSchedule>
-final List<ReviewableSchedule> _globalMockEvents = [
-  ReviewableSchedule.fromJson({
-    'id': 100, 'category': 'FUTSAL', 'team1': 'FASILKOM', 'team2': 'FT', 
-    'location': 'GOR Fasilkom', 'date': '2025-11-20', 'time': '19:00', 'status': 'reviewable',
-    'image_url': 'https://placehold.co/600x400/3293EC/FFFFFF?text=Futsal+Final',
-    'avg_rating': 4.5, 'review_count': 12, 'caption': 'Pertandingan final simulasi.',
-  }),
-  ReviewableSchedule.fromJson({
-    'id': 101, 'category': 'BADMINTON', 'team1': 'FH', 'team2': 'FISIP', 
-    'location': 'Gymnasium', 'date': '2025-11-21', 'time': '14:00', 'status': 'reviewable',
-    'image_url': 'https://placehold.co/600x400/9E292D/FFFFFF?text=Badminton+Simulasi',
-    'avg_rating': 3.1, 'review_count': 5, 'caption': 'Laga beregu pertama simulasi.',
-  }),
-];
-// ----------------------------------------
-
-
 class ReviewListPage extends StatefulWidget {
   const ReviewListPage({
     super.key,
@@ -62,48 +43,40 @@ class _ReviewListPageState extends State<ReviewListPage> {
   }
 
   Future<void> _fetchReviewableEvents({bool showSnack = false}) async {
-    // 1. Mulai Loading/Reset Error State
     setState(() {
       _loading = true;
       _error = false;
     });
 
-    List<ReviewableSchedule> fetchedEvents = [];
-    bool fetchFailed = false;
-
     try {
-      // Panggilan API
-      fetchedEvents = await _reviewApi.fetchReviewableEvents();
+      // Pastikan _reviewApi.fetchReviewableEvents kamu dimodifikasi 
+      // agar menerima parameter sort! Contoh: .fetchReviewableEvents(sort: _currentSort)
+      // Jika API service belum support, kamu harus ubah URL-nya manual di sini atau di service.
+      
+      // Anggap service kamu sudah diupdate atau menerima argumen query param:
+      final fetchedEvents = await _reviewApi.fetchReviewableEvents(sort: _currentSort);
+      
       if (!mounted) return;
       
-      _reviewableEvents = fetchedEvents; // Assign list yang berhasil di fetch
+      setState(() {
+        _loading = false;
+        _reviewableEvents = fetchedEvents; // Murni data dari API
+        _error = false;
+      });
 
     } catch (e) {
       if (!mounted) return;
-      fetchFailed = true;
-      if (showSnack) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Gagal memuat event: ${e.toString()}. Menampilkan data simulasi.')),
-        );
-      }
-
-    } finally {
-      // 2. Selesaikan Loading/Set Final State
-      if (!mounted) return;
       setState(() {
         _loading = false;
-        _error = fetchFailed;
-        
-        // Logika Fallback Teraman:
-        // Jika fetch gagal (_error=true) DAN list hasil fetch (setelah error) kosong,
-        // kita timpa dengan mock data agar UI tampil.
-        if (_error && _reviewableEvents.isEmpty) {
-             _reviewableEvents = _globalMockEvents;
-        } else if (!_error && _reviewableEvents.isEmpty) {
-             // Jika tidak ada error tapi list kosong, biarkan kosong.
-             _reviewableEvents = const [];
-        }
+        _error = true;
+        _reviewableEvents = []; // Kosongkan jika error (JANGAN PAKAI MOCK)
       });
+      
+      if (showSnack) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Gagal memuat data PWS: ${e.toString()}')),
+        );
+      }
     }
   }
   
@@ -170,7 +143,7 @@ class _ReviewListPageState extends State<ReviewListPage> {
               setState(() {
                 _currentSort = newValue;
               });
-              // Logika sorting yang sebenarnya akan ada di Django API
+              _fetchReviewableEvents();
             }
           },
         ),
@@ -301,11 +274,8 @@ class _ReviewListPageState extends State<ReviewListPage> {
 
   @override
   Widget build(BuildContext context) {
-    // Logika penentuan list yang akan ditampilkan.
-    // Jika _error TRUE DAN _reviewableEvents kosong (berarti fetch gagal dan belum ada data),
-    // kita gunakan mock data.
-    final List<ReviewableSchedule> displayEvents = _error && _reviewableEvents.isEmpty ? _globalMockEvents : _reviewableEvents;
-    
+    final List<ReviewableSchedule> displayEvents = _reviewableEvents;
+
     return Scaffold(
       appBar: AppBar(
         title: const Text('Review Pertandingan'),
@@ -324,7 +294,7 @@ class _ReviewListPageState extends State<ReviewListPage> {
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: <Widget>[
                   const Text(
-                    'Event yang Siap Diberi Ulasan',
+                    'Review Pertandingan',
                     style: TextStyle(fontSize: 18, fontWeight: FontWeight.w600),
                   ),
                   _buildSortDropdown(),

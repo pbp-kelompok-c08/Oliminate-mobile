@@ -43,19 +43,17 @@ class ReviewApiService {
   }
 
   // >>>>>> PERBAIKAN: RETURN TYPE DIDEKLARASIKAN DAN DITERAPKAN DENGAN BENAR <<<<<<
-  Future<List<ReviewableSchedule>> fetchReviewableEvents() async {
-    final http.Response res = await http.get(
-      _uri('/review/api/list/'), 
-      headers: _headers(),
-    );
+  Future<List<ReviewableSchedule>> fetchReviewableEvents({String sort = '-review_count'}) async {
+    final url = Uri.parse('$baseUrl/reviews/json/?sort=$sort'); 
+    
+    final response = await http.get(url, headers: defaultHeaders);
 
-    final List<dynamic> body = jsonDecode(res.body) as List<dynamic>;
+    final List<dynamic> body = jsonDecode(response.body) as List<dynamic>;
 
-    if (res.statusCode != 200) {
+    if (response.statusCode != 200) {
       throw Exception('Gagal load daftar event reviewable');
     }
-    
-    // Pastikan hasil map dikonversi ke List<ReviewableSchedule>
+
     return body
         .map((dynamic e) => ReviewableSchedule.fromJson(e as Map<String, dynamic>))
         .toList();
