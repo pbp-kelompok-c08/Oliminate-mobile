@@ -4,6 +4,7 @@ class Merchandise {
   final String category;
   final int price;
   final int stock;
+  final String description;
   final String? imageUrl;
   final String organizerUsername;
 
@@ -13,6 +14,7 @@ class Merchandise {
     required this.category,
     required this.price,
     required this.stock,
+    required this.description,
     this.imageUrl,
     required this.organizerUsername,
   });
@@ -25,6 +27,7 @@ class Merchandise {
       category: json['category'] as String,
       price: json['price'] as int,
       stock: json['stock'] as int,
+      description: json['description'] as String,
       imageUrl: json['image_url'] as String?,
       organizerUsername: json['organizer_username'] as String,
     );

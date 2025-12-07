@@ -1,15 +1,16 @@
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
+import 'package:oliminate_mobile/features/merchandise/screens/merchandise_form_page.dart';
+import 'package:oliminate_mobile/left_drawer.dart';
 import 'dart:convert';
-import '../models/merchandise_model.dart'; // Ensure this path is correct
+import '../models/merchandise_model.dart'; // Import the new model file
+import 'cart_page.dart';
+import 'merchandise_detail.dart'; // Import the CartPage
 
 // --- Main Widget ---
 
 class MerchandisePage extends StatefulWidget {
-  // IMPORTANT: Using localhost:8000 as requested for desktop/web testing.
-  // If running on a physical mobile device, this must be replaced with your computer's LAN IP address (e.g., http://192.168.1.x:8000).
-  final String baseUrl = 'http://localhost:8000';
-  final String apiEndpoint = '/merchandise/list/';
+  final String apiUrl = 'http://localhost:8000/merchandise/list/'; 
   
   const MerchandisePage({super.key});
 
@@ -21,278 +22,543 @@ class _MerchandisePageState extends State<MerchandisePage> {
   List<Merchandise> merchandises = [];
   List<CategoryChoice> categoryChoices = [];
   bool isLoading = true;
-  String? currentSort; // price_asc, price_desc, or null (default)
-  String? currentCategory; // category value or null (all)
+  String? currentSort; 
+  String? currentCategory; 
+  
+  // PLACEHOLDER: Set this to true to see the Edit/Delete buttons.
+  // In a real app, this should be set after checking the user's role post-login.
+  final bool _isOrganizer = true; 
 
   @override
   void initState() {
     super.initState();
-    // Initialize category choices to prevent null list errors on first load
     categoryChoices = [CategoryChoice(value: '', label: 'All Categories')];
     fetchMerchandise();
   }
 
   // Fetches data from the Django API with current filters and sort applied
-  Future<void> fetchMerchandise({String? category, String? sort}) async {
+  Future<void> fetchMerchandise() async {
     setState(() {
       isLoading = true;
     });
 
-    // 1. Construct the URL with query parameters
-    final Map<String, dynamic> queryParams = {};
-    if (category != null && category.isNotEmpty) {
-      queryParams['category'] = category;
-    }
-    if (sort != null && sort.isNotEmpty) {
-      queryParams['sort_by'] = sort;
-    }
-
-    // Combine base URL and endpoint, then append query parameters
-    final uri = Uri.parse('${widget.baseUrl}${widget.apiEndpoint}').replace(queryParameters: queryParams.map((k, v) => MapEntry(k, v.toString())));
-
     try {
-      final response = await http.get(uri);
+      // Build query parameters
+      Map<String, String> queryParams = {};
+      if (currentCategory != null && currentCategory!.isNotEmpty) {
+        queryParams['category'] = currentCategory!;
+      }
+      if (currentSort != null) {
+        queryParams['sort_by'] = currentSort!;
+      }
 
+      final uri = Uri.parse(widget.apiUrl).replace(queryParameters: queryParams);
+      
+      final response = await http.get(uri); 
+      
       if (response.statusCode == 200) {
-        // Use utf8.decode(response.bodyBytes) for robust handling of JSON data
-        final Map<String, dynamic> data = jsonDecode(utf8.decode(response.bodyBytes));
+        final data = jsonDecode(utf8.decode(response.bodyBytes));
         
-        List<Merchandise> fetchedMerch = [];
-        List<CategoryChoice> fetchedChoices = [CategoryChoice(value: '', label: 'All Categories')];
+        List<Merchandise> fetchedMerch = (data['merchandises'] as List)
+            .map((json) => Merchandise.fromJson(json))
+            .toList();
+
+        List<CategoryChoice> fetchedCategories = (data['category_choices'] as List)
+            .map((json) => CategoryChoice.fromList(json))
+            .toList();
         
-        // CRITICAL PARSING STEP: Access the list under the 'merchandises' key
-        if (data.containsKey('merchandises') && data['merchandises'] is List) {
-          for (var item in data['merchandises']) {
-            // The item is passed to Merchandise.fromJson which now has robust casting
-            fetchedMerch.add(Merchandise.fromJson(item)); 
-          }
-        }
-        
-        // Parse category choices
-        if (data.containsKey('category_choices') && data['category_choices'] is List) {
-          for (var choice in data['category_choices']) {
-            fetchedChoices.add(CategoryChoice.fromList(choice));
-          }
-        }
+        fetchedCategories.insert(0, CategoryChoice(value: '', label: 'All Categories'));
 
         setState(() {
           merchandises = fetchedMerch;
-          categoryChoices = fetchedChoices;
-          // The API returns the current filters, which we use to update the UI state
-          currentCategory = data['current_category']?.toString(); 
-          currentSort = data['current_sort']?.toString();
+          categoryChoices = fetchedCategories;
           isLoading = false;
         });
       } else {
-        // Handle non-200 responses
-        print('Failed to load merchandise. Status: ${response.statusCode}, Body: ${response.body}');
-        // Provide user feedback about the server connection issue
-        throw Exception('Server returned status code: ${response.statusCode}');
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Failed to load merchandise: ${response.statusCode}')),
+        );
+        setState(() { isLoading = false; });
       }
     } catch (e) {
-      // This is where the 'NetworkError' is caught.
-      print('Error fetching merchandise: $e');
-      setState(() {
-        isLoading = false;
-        // Optionally, show a snakbar or error message in the UI here
-      });
-      // Re-throw the exception to make it visible
-      rethrow; 
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Network error: $e')),
+      );
+      setState(() { isLoading = false; });
     }
   }
 
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text('Merchandise List'),
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.refresh),
-            onPressed: () => fetchMerchandise(),
-          ),
-          IconButton(
-            icon: const Icon(Icons.shopping_cart),
-            onPressed: () {
-              // TODO: Navigate to Cart Page
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(content: Text('Navigating to Cart (TODO)')),
-              );
-            },
-          ),
-        ],
-      ),
-      body: isLoading
-          ? const Center(child: CircularProgressIndicator())
-          : merchandises.isEmpty
-              ? Center(
-                  child: Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      const Text('No merchandise found.', style: TextStyle(fontSize: 18)),
-                      const SizedBox(height: 16),
-                      ElevatedButton(
-                        onPressed: () => fetchMerchandise(),
-                        child: const Text('Try Again'),
-                      ),
-                      // Add troubleshooting info for the user
-                      const Padding(
-                        padding: EdgeInsets.all(24.0),
-                        child: Text(
-                          'If you see an error like "NetworkError" or "Failed Host Check", make sure your Django server is running and configured for CORS.',
-                          textAlign: TextAlign.center,
-                          style: TextStyle(fontSize: 12, color: Colors.grey),
-                        ),
-                      ),
-                    ],
-                  ),
-                )
-              : Column(
-                  children: [
-                    _buildFilterAndSortBar(context),
-                    Expanded(
-                      child: GridView.builder(
-                        padding: const EdgeInsets.all(16.0),
-                        gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                          crossAxisCount: 2,
-                          childAspectRatio: 0.7, // Adjust to fit card content
-                          crossAxisSpacing: 16.0,
-                          mainAxisSpacing: 16.0,
-                        ),
-                        itemCount: merchandises.length,
-                        itemBuilder: (context, index) {
-                          return _buildMerchandiseCard(merchandises[index]);
-                        },
-                      ),
-                    ),
-                  ],
-                ),
-    );
+  void _onCategoryChanged(String? newValue) {
+    if (newValue != null && newValue != currentCategory) {
+      setState(() {
+        currentCategory = newValue.isEmpty ? null : newValue;
+        fetchMerchandise();
+      });
+    }
   }
-  
-  Widget _buildFilterAndSortBar(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.all(8.0),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-        children: [
-          // Category Dropdown
-          DropdownButton<String>(
-            value: currentCategory ?? '',
-            items: categoryChoices.map((choice) {
-              return DropdownMenuItem<String>(
-                value: choice.value,
-                child: Text(choice.label),
-              );
-            }).toList(),
-            onChanged: (String? newValue) {
-              if (newValue != null) {
-                fetchMerchandise(category: newValue, sort: currentSort);
-              }
-            },
-          ),
-          
-          // Sort Dropdown
-          DropdownButton<String>(
-            value: currentSort,
-            hint: const Text('Sort By'),
-            items: const [
-              DropdownMenuItem(value: null, child: Text('Default (Name)')),
-              DropdownMenuItem(value: 'price_asc', child: Text('Price: Low to High')),
-              DropdownMenuItem(value: 'price_desc', child: Text('Price: High to Low')),
-            ],
-            onChanged: (String? newValue) {
-              fetchMerchandise(category: currentCategory, sort: newValue);
-            },
-          ),
-        ],
+
+  void _onSortChanged(String? newValue) {
+    if (newValue != null && newValue != currentSort) {
+      setState(() {
+        currentSort = newValue;
+        fetchMerchandise();
+      });
+    }
+  }
+
+  // --- NEW: Management API Calls ---
+
+  // Function to simulate navigation to an edit form (not implemented here)
+  void _editMerchandise(Merchandise merch) {
+    // Navigate to Detail Page and pass the current Merchandise object
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => MerchandiseFormPage(merchandise: merch, categoryChoices: categoryChoices),
       ),
     );
   }
 
-  // Card Widget
-  Widget _buildMerchandiseCard(Merchandise merch) {
-    final isStockAvailable = merch.stock > 0;
-    
-    return Card(
-      elevation: 4.0,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12.0)),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
+
+  Future<void> _deleteMerchandise(String merchandiseId, String name) async {
+    // 1. Show confirmation dialog
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          title: const Text('Confirm Deletion'),
+          content: Text('Are you sure you want to delete "$name"? This cannot be undone.'),
+          actions: <Widget>[
+            TextButton(
+              child: const Text('Cancel'),
+              onPressed: () => Navigator.of(context).pop(false),
+            ),
+            TextButton(
+              child: const Text('Delete', style: TextStyle(color: Colors.red)),
+              onPressed: () => Navigator.of(context).pop(true),
+            ),
+          ],
+        );
+      },
+    );
+
+    if (confirmed != true) return;
+
+    // 2. Perform API call
+    final baseUrl = widget.apiUrl.substring(0, widget.apiUrl.indexOf('/merchandise'));
+    // URL: /merchandise/<uuid:id>/delete/
+    final url = Uri.parse('$baseUrl/merchandise/$merchandiseId/delete/');
+
+    try {
+      final response = await http.post(
+        url,
+      );
+
+      if (response.statusCode == 302 || response.statusCode == 200) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Merchandise "$name" deleted successfully.')),
+        );
+        // Refresh the list after successful deletion
+        fetchMerchandise();
+      } else if (response.statusCode == 403) {
+         ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Error: Only Organizers can delete merchandise (403 Forbidden).')),
+        );
+      } 
+      else {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Failed to delete merchandise. Status: ${response.statusCode}')),
+        );
+      }
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Network error during deletion: $e')),
+      );
+    }
+  }
+
+  // ---------------------------------
+
+
+  @override
+  Widget build(BuildContext context) {
+    final baseUrl = widget.apiUrl.substring(0, widget.apiUrl.indexOf('/merchandise'));
+
+    return Scaffold(
+      appBar: AppBar(
+        title: const Text('Merchandise Catalog'),
+        backgroundColor: Colors.blueAccent,
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.shopping_cart),
+            onPressed: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => const CartPage(),
+                ),
+              );
+            },
+          ),
+          if (_isOrganizer) // Add a button for creating new items if the user is an organizer
+            IconButton(
+              icon: const Icon(Icons.add_box),
+              tooltip: 'Add New Merchandise',
+              onPressed: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) => MerchandiseFormPage(merchandise: null, categoryChoices: categoryChoices),
+                  ),
+                );
+              },
+            ),
+        ],
+      ),
+      drawer: LeftDrawer(),
+      body: Column(
         children: <Widget>[
-          // Image/Placeholder
-          Expanded(
-            flex: 2,
-            child: ClipRRect(
-              borderRadius: const BorderRadius.vertical(top: Radius.circular(12.0)),
-              child: merch.imageUrl != null && merch.imageUrl!.isNotEmpty
-                  ? Image.network(
-                      merch.imageUrl!,
-                      fit: BoxFit.cover,
-                      width: double.infinity,
-                      errorBuilder: (context, error, stackTrace) => _imagePlaceholder(),
-                    )
-                  : _imagePlaceholder(),
+          // Filter and Sort Controls
+          Padding(
+            padding: const EdgeInsets.all(8.0),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Expanded(
+                  child: DropdownButtonFormField<String>(
+                    decoration: const InputDecoration(
+                      labelText: 'Category',
+                      border: OutlineInputBorder(),
+                      contentPadding: EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+                    ),
+                    value: currentCategory ?? '',
+                    items: categoryChoices.map((CategoryChoice category) {
+                      return DropdownMenuItem<String>(
+                        value: category.value,
+                        child: Text(category.label),
+                      );
+                    }).toList(),
+                    onChanged: _onCategoryChanged,
+                  ),
+                ),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: DropdownButtonFormField<String>(
+                    decoration: const InputDecoration(
+                      labelText: 'Sort By',
+                      border: OutlineInputBorder(),
+                      contentPadding: EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+                    ),
+                    value: currentSort,
+                    items: [
+                      const DropdownMenuItem(value: null, child: Text('Default')),
+                      const DropdownMenuItem(value: 'price_asc', child: Text('Price: Low to High')),
+                      const DropdownMenuItem(value: 'price_desc', child: Text('Price: High to Low')),
+                    ],
+                    onChanged: _onSortChanged,
+                  ),
+                ),
+              ],
             ),
           ),
           
-          // Details and Actions
+          // Merchandise Grid
           Expanded(
-            flex: 3,
+            child: isLoading
+                ? const Center(child: CircularProgressIndicator())
+                : merchandises.isEmpty
+                    ? Center(child: Text('No merchandise found for category: ${currentCategory ?? "All"}'))
+                    : GridView.builder(
+                        padding: const EdgeInsets.all(16.0),
+                        gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                          crossAxisCount: 2, 
+                          crossAxisSpacing: 16.0,
+                          mainAxisSpacing: 16.0,
+                          childAspectRatio: 0.65, // Adjusted ratio for management buttons
+                        ),
+                        itemCount: merchandises.length,
+                        itemBuilder: (context, index) {
+                          return _MerchandiseCard(
+                            merch: merchandises[index],
+                            baseUrl: baseUrl,
+                            isOrganizer: _isOrganizer, // Pass organizer status
+                            onEdit: _editMerchandise, // Pass edit function
+                            onDelete: _deleteMerchandise, // Pass delete function
+                          );
+                        },
+                      ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+// --- Individual Card Widget (Stateful for loading state) ---
+
+class _MerchandiseCard extends StatefulWidget {
+  final Merchandise merch;
+  final String baseUrl; 
+  final bool isOrganizer; // NEW
+  final Function(Merchandise) onEdit; // NEW: Callback for editing
+  final Function(String, String) onDelete; // NEW: Callback for deleting
+
+  const _MerchandiseCard({
+    required this.merch, 
+    required this.baseUrl, 
+    required this.isOrganizer, 
+    required this.onEdit, 
+    required this.onDelete,
+  });
+
+  @override
+  State<_MerchandiseCard> createState() => _MerchandiseCardState();
+}
+
+class _MerchandiseCardState extends State<_MerchandiseCard> {
+  bool _isAddingToCart = false; // Local state for loading indicator
+
+  String? _getResolvedImageUrl(String? url) {
+    // if (url == null || url.isEmpty) {
+    //   return null;
+    // }
+    // if (url.startsWith('http://') || url.startsWith('https://')) {
+    //   return url;
+    // }
+    // try {
+    //   Uri baseUri = Uri.parse(widget.baseUrl);
+    //   Uri resolvedUri = baseUri.resolve(url);
+    //   return resolvedUri.toString();
+    // } catch (e) {
+    //   return '${widget.baseUrl}$url';
+    // }
+    return 'http://localhost:8000/merchandise/proxy-image/?url=${Uri.encodeComponent(widget.merch.imageUrl.toString())}';
+  }
+  
+  // --- Add to Cart API Implementation ---
+  Future<void> _addToCart() async {
+    if (widget.merch.stock == 0) return;
+
+    setState(() {
+      _isAddingToCart = true;
+    });
+    
+    // Construct the full URL for the cart_add_item endpoint 
+    final url = Uri.parse(
+        '${widget.baseUrl}/merchandise/cart/add/${widget.merch.id}/');
+
+    try {
+      final response = await http.post(
+        url,
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: json.encode({
+          'quantity': 1, 
+        }),
+      );
+
+      if (response.statusCode == 302 || response.statusCode == 200) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Berhasil menambahkan 1x ${widget.merch.name} ke keranjang!')),
+        );
+      } else {
+        String message = response.statusCode == 403 
+            ? 'Gagal: Sesi login tidak valid (403 Forbidden). Cek sessionid dan csrftoken.' 
+            : 'Gagal menambahkan ke keranjang. Status: ${response.statusCode}';
+        
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(message)),
+        );
+      }
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Terjadi kesalahan jaringan: $e')),
+      );
+    } finally {
+      setState(() {
+        _isAddingToCart = false;
+      });
+    }
+  }
+
+  Widget _imagePlaceholder() {
+    return Container(
+      color: Colors.grey[200],
+      child: const Center(
+        child: Icon(
+          Icons.image_not_supported, 
+          color: Colors.grey, 
+          size: 50
+        ),
+      ),
+    );
+  }
+
+  Widget _imageLoadingIndicator() {
+    return Container(
+      color: Colors.grey[100],
+      child: const Center(
+        child: CircularProgressIndicator(
+          valueColor: AlwaysStoppedAnimation<Color>(Colors.blue),
+        ),
+      ),
+    );
+  }
+
+
+  @override
+  Widget build(BuildContext context) {
+    final isStockAvailable = widget.merch.stock > 0;
+    final resolvedImageUrl = _getResolvedImageUrl(widget.merch.imageUrl);
+
+    return Card(
+      elevation: 4,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: <Widget>[
+          // Image Container
+          Container(
+            width: double.infinity,
+            height: 300, 
+            clipBehavior: Clip.antiAlias,
+            decoration: const BoxDecoration(
+              borderRadius: BorderRadius.vertical(top: Radius.circular(12)),
+            ),
+            child: resolvedImageUrl != null 
+                ? Image.network(
+                    resolvedImageUrl,
+                    fit: BoxFit.contain,
+                    errorBuilder: (context, error, stackTrace) {
+                       return _imagePlaceholder();
+                    },
+                    loadingBuilder: (context, child, loadingProgress) {
+                      if (loadingProgress == null) return child;
+                      return _imageLoadingIndicator();
+                    },
+                  )
+                : _imagePlaceholder(),
+          ),
+          
+          // Details
+          Expanded( // Use Expanded to ensure the remaining space is filled
             child: Padding(
               padding: const EdgeInsets.all(12.0),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                mainAxisAlignment: MainAxisAlignment.spaceBetween, // Distribute space
                 children: <Widget>[
                   Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        merch.name,
-                        style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+                        widget.merch.name,
+                        style: const TextStyle(
+                          fontWeight: FontWeight.bold,
+                          fontSize: 16,
+                        ),
+                        maxLines: 1, 
                         overflow: TextOverflow.ellipsis,
                       ),
                       const SizedBox(height: 4),
                       Text(
-                        'Rp ${merch.price}',
-                        style: TextStyle(color: Colors.green[700], fontWeight: FontWeight.w600),
+                        'Rp ${widget.merch.price.toString()}',
+                        style: TextStyle(
+                          color: Colors.green[700],
+                          fontWeight: FontWeight.w600,
+                          fontSize: 14,
+                        ),
                       ),
+                      const SizedBox(height: 4),
                       Text(
-                        'Stock: ${merch.stock}',
-                        style: TextStyle(fontSize: 12, color: isStockAvailable ? Colors.grey[600] : Colors.red),
+                        'Stock: ${widget.merch.stock}',
+                        style: TextStyle(
+                          color: isStockAvailable ? Colors.grey[600] : Colors.red,
+                          fontSize: 12,
+                        ),
+                      ),
+                      const SizedBox(height: 8),
+                      Text(
+                        widget.merch.description,
+                        style: const TextStyle(
+                          fontSize: 12,
+                          color: Colors.black54,
+                        ),
+                        maxLines: 2, 
+                        overflow: TextOverflow.ellipsis,
                       ),
                     ],
                   ),
-                  
-                  // Buttons
+
+                  // Action Buttons (Management or User)
                   Column(
                     children: [
-                      OutlinedButton(
-                        onPressed: () {
-                          // TODO: Navigate to Detail Page (pass merch.id)
-                        },
-                        style: OutlinedButton.styleFrom(minimumSize: const Size(double.infinity, 36)),
-                        child: const Text('Detail'),
-                      ),
-                      const SizedBox(height: 8),
-                      ElevatedButton(
-                        onPressed: isStockAvailable ? () {
-                          // TODO: Implement Add to Cart API call
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            SnackBar(content: Text('Added ${merch.name} to cart!')
+                      if (widget.isOrganizer) // Show management buttons if organizer
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceAround,
+                          children: [
+                            Expanded(
+                              child: OutlinedButton.icon(
+                                icon: const Icon(Icons.edit, size: 18),
+                                label: const Text('Edit', style: TextStyle(fontSize: 12)),
+                                onPressed: () => widget.onEdit(widget.merch),
+                                style: OutlinedButton.styleFrom(
+                                  padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 8),
+                                ),
+                              ),
                             ),
-                          );
-                        } : null, 
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: isStockAvailable ? Colors.blue : Colors.grey[400],
-                          minimumSize: const Size(double.infinity, 36),
+                            const SizedBox(width: 8),
+                            Expanded(
+                              child: OutlinedButton.icon(
+                                icon: const Icon(Icons.delete, size: 18),
+                                label: const Text('Delete', style: TextStyle(fontSize: 12)),
+                                onPressed: () => widget.onDelete(widget.merch.id, widget.merch.name),
+                                style: OutlinedButton.styleFrom(
+                                  foregroundColor: Colors.red,
+                                  side: const BorderSide(color: Colors.red),
+                                  padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 8),
+                                ),
+                              ),
+                            ),
+                          ],
+                        )
+                      else // Show regular user button
+                        ElevatedButton(
+                          onPressed: isStockAvailable && !_isAddingToCart ? _addToCart : null, 
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: isStockAvailable ? Colors.blue : Colors.grey[400],
+                            minimumSize: const Size(double.infinity, 36),
+                          ),
+                          child: _isAddingToCart
+                              ? const SizedBox(
+                                  height: 20,
+                                  width: 20,
+                                  child: CircularProgressIndicator(
+                                    color: Colors.white,
+                                    strokeWidth: 2,
+                                  ),
+                                )
+                              : Text(
+                                  isStockAvailable ? 'Tambah ke Keranjang' : 'Stok Habis',
+                                  style: TextStyle(color: isStockAvailable ? Colors.white : Colors.black54),
+                                ),
                         ),
-                        child: Text(
-                          isStockAvailable ? 'Tambah ke Keranjang' : 'Stok Habis',
-                          style: TextStyle(color: isStockAvailable ? Colors.white : Colors.black54),
+                        const SizedBox(height: 8),
+                        // Detail Button (always present)
+                        OutlinedButton(
+                          onPressed: () {
+                            // Navigate to Detail Page and pass the current Merchandise object
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (context) => MerchandiseDetailScreen(merchandise: widget.merch),
+                              ),
+                            );
+                          },
+                          style: OutlinedButton.styleFrom(minimumSize: const Size(double.infinity, 36)),
+                          child: const Text('Detail'),
                         ),
-                      ),
                     ],
                   ),
                 ],
@@ -300,20 +566,6 @@ class _MerchandisePageState extends State<MerchandisePage> {
             ),
           ),
         ],
-      ),
-    );
-  }
-
-  // Placeholder for missing image
-  Widget _imagePlaceholder() {
-    return Container(
-      color: Colors.grey[200],
-      child: Center(
-        child: Icon(
-          Icons.image_not_supported, 
-          color: Colors.grey[400], 
-          size: 50
-        ),
       ),
     );
   }
