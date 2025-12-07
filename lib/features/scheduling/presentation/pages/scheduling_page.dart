@@ -63,14 +63,18 @@ class _SchedulingPageState extends State<SchedulingPage> {
           const SnackBar(content: Text('Jadwal berhasil di-refresh')),
         );
       }
-    } catch (_) {
+    } catch (e) {
       if (!mounted) return;
+      debugPrint('Error fetching schedule list: $e');
       setState(() {
         _error = true;
       });
       if (showSnack) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Gagal memuat jadwal')),
+          SnackBar(
+            content: Text('Gagal memuat jadwal: ${e.toString()}'),
+            duration: const Duration(seconds: 4),
+          ),
         );
       }
     } finally {

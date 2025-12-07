@@ -301,6 +301,11 @@ class AuthRepository {
     if (error is SocketException) {
       return 'Tidak bisa terhubung ke server. Periksa koneksi atau URL backend.';
     }
+    if (error is http.ClientException) {
+      return 'Gagal terhubung ke server. Pastikan koneksi internet aktif dan server dapat diakses.\n'
+          'URL: ${AppConfig.backendBaseUrl}\n'
+          'Error: ${error.message}';
+    }
     return 'Terjadi kesalahan tak terduga: $error';
   }
 

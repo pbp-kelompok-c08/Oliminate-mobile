@@ -21,7 +21,12 @@ class SchedulingApiService {
   }
 
   Uri _uri(String path, [Map<String, String>? query]) {
-    final Uri uri = Uri.parse('$baseUrl$path');
+    // Pastikan tidak ada double slash
+    final String cleanBaseUrl = baseUrl.endsWith('/') 
+        ? baseUrl.substring(0, baseUrl.length - 1) 
+        : baseUrl;
+    final String cleanPath = path.startsWith('/') ? path : '/$path';
+    final Uri uri = Uri.parse('$cleanBaseUrl$cleanPath');
     if (query == null || query.isEmpty) return uri;
     return uri.replace(
       queryParameters: <String, String>{
@@ -32,24 +37,51 @@ class SchedulingApiService {
   }
 
   Future<List<Schedule>> fetchList({String filter = 'all'}) async {
-    final http.Response res = await http.get(
-      _uri('/scheduling/api/list/', <String, String>{'filter': filter}),
-      headers: _headers(),
-    );
+    try {
+      final Uri requestUri = _uri('/scheduling/api/list/', <String, String>{'filter': filter});
+      
+      final http.Response res = await http.get(
+        requestUri,
+        headers: _headers(),
+      ).timeout(
+        const Duration(seconds: 30),
+        onTimeout: () {
+          throw Exception('Request timeout: Tidak dapat terhubung ke server');
+        },
+      );
 
-    final Map<String, dynamic> body =
-        jsonDecode(res.body) as Map<String, dynamic>;
+      if (res.statusCode != 200) {
+        throw Exception(
+          'HTTP ${res.statusCode}: ${res.reasonPhrase}\nURL: $requestUri\nBody: ${res.body}',
+        );
+      }
 
-    if (res.statusCode != 200 || body['ok'] != true) {
-      throw Exception('Gagal load list jadwal');
+      final Map<String, dynamic> body =
+          jsonDecode(res.body) as Map<String, dynamic>;
+
+      if (body['ok'] != true) {
+        throw Exception(
+          'Response tidak OK: ${body['errors'] ?? body.toString()}',
+        );
+      }
+
+      final List<dynamic> items = body['items'] as List<dynamic>? ?? <dynamic>[];
+      return items
+          .map(
+            (dynamic e) => Schedule.fromJson(e as Map<String, dynamic>),
+          )
+          .toList();
+    } on http.ClientException catch (e) {
+      throw Exception(
+        'Gagal terhubung ke server. Pastikan koneksi internet aktif dan server dapat diakses.\n'
+        'URL: ${_uri('/scheduling/api/list/')}\n'
+        'Error: ${e.message}',
+      );
+    } on FormatException catch (e) {
+      throw Exception('Format response tidak valid: $e');
+    } catch (e) {
+      throw Exception('Error tidak diketahui: $e');
     }
-
-    final List<dynamic> items = body['items'] as List<dynamic>? ?? <dynamic>[];
-    return items
-        .map(
-          (dynamic e) => Schedule.fromJson(e as Map<String, dynamic>),
-        )
-        .toList();
   }
 
   Future<Schedule> createSchedule(Map<String, String> formData) async {
