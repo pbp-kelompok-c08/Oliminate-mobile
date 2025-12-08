@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:oliminate_mobile/features/user-profile/auth_repository.dart';
-import 'package:oliminate_mobile/features/user-profile/main_profile.dart';
+import 'package:oliminate_mobile/widgets/main_scaffold.dart';
 import 'register.dart';
 
 const Color kAuthBlue = Color(0xFF22629E);
@@ -82,7 +82,7 @@ class _LoginPageState extends State<LoginPage> {
     }
     Navigator.of(context).pushReplacement(
       MaterialPageRoute(
-        builder: (_) => const ProfilePage(),
+        builder: (_) => const MainScaffold(),
       ),
     );
   }
