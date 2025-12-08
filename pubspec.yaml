@@ -36,6 +36,13 @@ dependencies:
   cupertino_icons: ^1.0.8
   http: ^1.6.0
 
+  html: ^0.15.4
+  shared_preferences: ^2.2.2
+  file_picker: ^6.1.1
+  intl: ^0.20.2
+  provider: ^6.1.5+1
+  pbp_django_auth: ^0.4.0
+
 dev_dependencies:
   flutter_test:
     sdk: flutter

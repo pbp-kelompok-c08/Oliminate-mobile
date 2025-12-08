@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
+import 'package:oliminate_mobile/features/user-profile/auth_repository.dart';
 import 'dart:convert';
 import '../models/cart_item_model.dart'; // Ensure this path is correct
 
@@ -31,11 +32,13 @@ class _CartPageState extends State<CartPage> {
   Future<void> fetchCart() async {
     setState(() { isLoading = true; });
     try {
-      final uri = Uri.parse('${widget.baseUrl}${widget.apiEndpoint}');
+      final uri = widget.apiEndpoint;
       
-      final response = await http.get(
-        uri,
-      );
+      // final response = await http.get(
+      //   uri,
+      // );
+
+      final response = await AuthRepository.instance.client.get(uri);
 
       if (response.statusCode == 200) {
         final data = jsonDecode(utf8.decode(response.bodyBytes));
@@ -63,17 +66,19 @@ class _CartPageState extends State<CartPage> {
     }
     
     // URL: /merchandise/cart/item/<uuid:item_id>/update/
-    final url = Uri.parse('${widget.baseUrl}${widget.updateEndpoint}$itemId/update/');
+    final url = Uri.parse('${widget.updateEndpoint}$itemId/update/').toString();
     
     try {
-      final response = await http.post(
-        url,
-        headers: {
-          'Content-Type': 'application/x-www-form-urlencoded', // Django expects form data for request.POST
-        },
-        // Send data as URL-encoded form data
-        body: 'quantity=$newQuantity',
-      );
+      // final response = await http.post(
+      //   url,
+      //   headers: {
+      //     'Content-Type': 'application/x-www-form-urlencoded', // Django expects form data for request.POST
+      //   },
+      //   // Send data as URL-encoded form data
+      //   body: 'quantity=$newQuantity',
+      // );
+
+      final response = await AuthRepository.instance.client.postForm(url, body: {});
 
       if (response.statusCode == 302 || response.statusCode == 200) {
         // Success means Django redirected back, refresh the cart
