@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:oliminate_mobile/core/app_config.dart';
 import 'package:oliminate_mobile/features/user-profile/auth_repository.dart';
 import 'package:oliminate_mobile/features/user-profile/login.dart';
+import 'package:oliminate_mobile/left_drawer.dart';
 import 'edit_profile.dart';
 
 class ProfilePage extends StatefulWidget {
@@ -59,8 +60,10 @@ class _ProfilePageState extends State<ProfilePage> {
     setState(() {
       _loggingOut = false;
     });
-    Navigator.of(context).pushNamedAndRemoveUntil(
-      LoginPage.routeName,
+    Navigator.of(context).pushAndRemoveUntil(
+      MaterialPageRoute(
+        builder: (_) => const LoginPage(),
+      ),
       (route) => false,
     );
   }
@@ -83,6 +86,7 @@ class _ProfilePageState extends State<ProfilePage> {
 
     if (_profile == null) {
       return Scaffold(
+        drawer: LeftDrawer(),
         body: Center(
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
@@ -105,6 +109,14 @@ class _ProfilePageState extends State<ProfilePage> {
     final p = _profile!;
 
     return Scaffold(
+      appBar: AppBar(
+        // The title is optional, but useful
+        title: const Text('User Profile'), 
+        // This line is often necessary to ensure the AppBar doesn't take up 
+        // too much space if you're already in a SafeArea.
+        toolbarHeight: kToolbarHeight, 
+      ),
+      drawer: LeftDrawer(),
       body: SafeArea(
         child: SingleChildScrollView(
           padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 24),
@@ -181,8 +193,11 @@ class _ProfilePageState extends State<ProfilePage> {
                           width: double.infinity,
                           child: FilledButton(
                             onPressed: () async {
-                              await Navigator.of(context)
-                                  .pushNamed(EditProfilePage.routeName);
+                              await Navigator.of(context).push(
+                                MaterialPageRoute(
+                                  builder: (_) => const EditProfilePage(),
+                                ),
+                              );
                               if (mounted) _load();
                             },
                             style: FilledButton.styleFrom(

@@ -80,8 +80,8 @@ class _MerchandiseFormPageState extends State<MerchandiseFormPage> {
     // Create URL: http://localhost:8000/merchandise/create
     // Update URL: http://localhost:8000/merchandise/<id>/edit/
     final String path = isUpdate 
-        ? '/merchandise/${widget.merchandise!.id}/edit/' 
-        : '/merchandise/create';
+        ? '/merchandise/list/${widget.merchandise!.id}/edit/' 
+        : '/merchandise/list/create';
         
     final url = Uri.parse('$_kBaseUrl$path');
 

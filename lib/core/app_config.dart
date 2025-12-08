@@ -12,7 +12,10 @@ class AppConfig {
     }
 
     if (kIsWeb) {
-      return 'http://127.0.0.1:8000';
+      // Gunakan localhost supaya dianggap satu "site" dengan
+      // dev server Flutter web (mis. http://localhost:5173),
+      // sehingga cookie CSRF dari Django terkirim dengan benar.
+      return 'http://localhost:8000';
     }
 
     switch (defaultTargetPlatform) {

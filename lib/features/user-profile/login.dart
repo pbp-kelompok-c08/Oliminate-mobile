@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:oliminate_mobile/features/main-page/main_page.dart';
 import 'package:oliminate_mobile/features/user-profile/auth_repository.dart';
 import 'package:oliminate_mobile/features/user-profile/main_profile.dart';
 import 'register.dart';
@@ -80,7 +81,11 @@ class _LoginPageState extends State<LoginPage> {
       widget.onLoginSuccess!.call();
       return;
     }
-    Navigator.of(context).pushReplacementNamed(ProfilePage.routeName);
+    Navigator.of(context).pushReplacement(
+      MaterialPageRoute(
+        builder: (_) => const ProfilePage(),
+      ),
+    );
   }
 
   @override
@@ -195,9 +200,11 @@ class _LoginPageState extends State<LoginPage> {
                                       if (widget.onRegisterTap != null) {
                                         widget.onRegisterTap!.call();
                                       } else {
-                                        Navigator.of(
-                                          context,
-                                        ).pushNamed(RegisterPage.routeName);
+                                        Navigator.of(context).push(
+                                          MaterialPageRoute(
+                                            builder: (_) => const RegisterPage(),
+                                          ),
+                                        );
                                       }
                                     },
                               child: Text(

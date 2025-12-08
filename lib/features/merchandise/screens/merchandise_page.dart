@@ -1,9 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
+import 'package:oliminate_mobile/core/django_client.dart';
 import 'package:oliminate_mobile/features/merchandise/screens/merchandise_form_page.dart';
 import 'package:oliminate_mobile/features/user-profile/auth_repository.dart';
 import 'package:oliminate_mobile/left_drawer.dart';
+import 'package:provider/provider.dart';
 import 'dart:convert';
+import 'package:pbp_django_auth/pbp_django_auth.dart';
 import '../models/merchandise_model.dart'; // Import the new model file
 import 'cart_page.dart';
 import 'merchandise_detail.dart'; // Import the CartPage
@@ -57,8 +60,8 @@ class _MerchandisePageState extends State<MerchandisePage> {
     if (!mounted) return;
     setState(() {
       isLoggedIn = p != null;
-      userRole = p?.role?.trim();
-      userName = p?.username?.trim();
+      userRole = p?.role.trim();
+      userName = p?.username.trim();
     });
   }
 
@@ -173,12 +176,13 @@ class _MerchandisePageState extends State<MerchandisePage> {
     // 2. Perform API call
     final baseUrl = widget.apiUrl.substring(0, widget.apiUrl.indexOf('/merchandise'));
     // URL: /merchandise/<uuid:id>/delete/
-    final url = Uri.parse('$baseUrl/merchandise/$merchandiseId/delete/');
+    final url = Uri.parse('$baseUrl/merchandise/$merchandiseId/delete/').toString();
 
     try {
-      final response = await http.post(
-        url,
-      );
+      // final response = await http.post(
+      //   url,
+      // );
+      final response = await _authRepo.client.get(url);
 
       if (response.statusCode == 302 || response.statusCode == 200) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -378,18 +382,19 @@ class _MerchandiseCardState extends State<_MerchandiseCard> {
     
     // Construct the full URL for the cart_add_item endpoint 
     final url = Uri.parse(
-        '${widget.baseUrl}/merchandise/cart/add/${widget.merch.id}/');
+        '/merchandise/api/cart/add/${widget.merch.id}/').toString();
 
     try {
-      final response = await http.post(
-        url,
-        headers: {
-          'Content-Type': 'application/json'
-        },
-        body: json.encode({
-          'quantity': 1, 
-        }),
-      );
+      // final response = await http.post(
+      //   url,
+      //   headers: {
+      //     'Content-Type': 'application/json'
+      //   },
+      //   body: json.encode({
+      //     'quantity': 1, 
+      //   }),
+      // );
+      final response = await AuthRepository.instance.client.postForm(url, body: {});
 
       if (response.statusCode == 302 || response.statusCode == 200) {
         ScaffoldMessenger.of(context).showSnackBar(

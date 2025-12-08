@@ -76,6 +76,7 @@ class AuthRepository {
 
   bool get isAuthenticated => _client.isAuthenticated;
   ProfileData? get cachedProfile => _cachedProfile;
+  DjangoClient get client => _client;
 
   Future<bool> validateSession() async {
     try {
@@ -300,6 +301,11 @@ class AuthRepository {
     }
     if (error is SocketException) {
       return 'Tidak bisa terhubung ke server. Periksa koneksi atau URL backend.';
+    }
+    if (error is http.ClientException) {
+      return 'Gagal terhubung ke server. Pastikan koneksi internet aktif dan server dapat diakses.\n'
+          'URL: ${AppConfig.backendBaseUrl}\n'
+          'Error: ${error.message}';
     }
     return 'Terjadi kesalahan tak terduga: $error';
   }

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:oliminate_mobile/features/user-profile/login.dart';
 import 'features/merchandise/screens/merchandise_page.dart';
 
 void main() {
@@ -31,7 +32,7 @@ class MyApp extends StatelessWidget {
         // tested with just a hot reload.
         colorScheme: ColorScheme.fromSeed(seedColor: Colors.deepPurple),
       ),
-      home: const MerchandisePage(),
+      home: const LoginPage(),
     );
   }
 }

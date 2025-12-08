@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'dart:convert';
 
+import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
 import 'package:oliminate_mobile/core/http_client_factory_stub.dart'
     if (dart.library.html) 'package:oliminate_mobile/core/http_client_factory_web.dart';
@@ -65,7 +66,18 @@ class DjangoClient {
       if (res.statusCode != 200 && res.statusCode != 302) {
         return false;
       }
-      // _csrfToken will be filled by _extractCsrfFromHtml inside get().
+      // Try to fill CSRF token either from HTML (hidden input) or JSON.
+      // HTML pages (e.g. /users/login/) are handled by _extractCsrfFromHtml in get().
+      if (_csrfToken == null) {
+        try {
+          final decoded = jsonDecode(res.body);
+          if (decoded is Map && decoded['csrfToken'] is String) {
+            _csrfToken = decoded['csrfToken'] as String;
+          }
+        } catch (_) {
+          // ignore non‑JSON responses
+        }
+      }
       return _csrfToken != null;
     }
 
@@ -76,17 +88,29 @@ class DjangoClient {
   }
 
   Future<http.Response> get(String path, {bool followRedirects = true}) async {
-    final req = http.Request('GET', _uri(path));
-    _attachHeaders(req);
-    req.followRedirects = followRedirects;
-    req.maxRedirects = 0;
+    try {
+      final Uri requestUri = _uri(path);
+      final req = http.Request('GET', requestUri);
+      _attachHeaders(req);
+      req.followRedirects = followRedirects;
+      req.maxRedirects = 0;
 
-    final streamed = await _client.send(req).timeout(_defaultTimeout);
-    final res = await http.Response.fromStream(streamed);
-    _updateCookiesFrom(res);
-    await saveCookies();
-    _extractCsrfFromHtml(res.body);
-    return res;
+      final streamed = await _client.send(req).timeout(_defaultTimeout);
+      final res = await http.Response.fromStream(streamed);
+      _updateCookiesFrom(res);
+      await saveCookies();
+      _extractCsrfFromHtml(res.body);
+      return res;
+    } on http.ClientException catch (e) {
+      debugPrint('ClientException in GET $path: ${e.message}');
+      rethrow;
+    } on TimeoutException catch (e) {
+      debugPrint('TimeoutException in GET $path: $e');
+      rethrow;
+    } catch (e) {
+      debugPrint('Unexpected error in GET $path: $e');
+      rethrow;
+    }
   }
 
   Future<http.Response> postForm(
