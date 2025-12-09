@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import 'package:oliminate_mobile/core/theme/app_colors.dart';
+import 'package:oliminate_mobile/features/user-profile/edit_profile.dart';
 
 class TicketingPage extends StatelessWidget {
   const TicketingPage({super.key});
@@ -12,6 +13,20 @@ class TicketingPage extends StatelessWidget {
         title: const Text('Ticketing'),
         backgroundColor: AppColors.pacilBlueDarker1,
         foregroundColor: Colors.white,
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.person_outline_rounded),
+            tooltip: 'Edit Profile',
+            onPressed: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (_) => const EditProfilePage(),
+                ),
+              );
+            },
+          ),
+        ],
       ),
       body: const Center(
         child: Column(

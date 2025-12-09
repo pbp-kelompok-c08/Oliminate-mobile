@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import 'package:oliminate_mobile/core/theme/app_colors.dart';
 import 'package:oliminate_mobile/features/user-profile/auth_repository.dart';
+import 'package:oliminate_mobile/features/user-profile/edit_profile.dart';
 import '../../data/datasources/scheduling_api_service.dart';
 import '../../data/models/schedule.dart';
 import '../widgets/schedule_card.dart';
@@ -28,22 +29,33 @@ class SchedulingPage extends StatefulWidget {
 
 class _SchedulingPageState extends State<SchedulingPage> {
   late final SchedulingApiService _api;
+  final _authRepo = AuthRepository.instance;
 
   bool _loading = false;
   bool _error = false;
   bool _empty = false;
   String _filter = 'all';
   List<Schedule> _items = <Schedule>[];
+  bool _isOrganizer = false;
 
   @override
   void initState() {
     super.initState();
-    final authRepo = AuthRepository.instance;
     _api = SchedulingApiService(
       baseUrl: widget.baseUrl,
-      djangoClient: authRepo.client,
+      djangoClient: _authRepo.client,
     );
+    _checkOrganizerRole();
     _fetchList();
+  }
+
+  Future<void> _checkOrganizerRole() async {
+    await _authRepo.init();
+    final profile = _authRepo.cachedProfile ?? await _authRepo.fetchProfile();
+    if (!mounted) return;
+    setState(() {
+      _isOrganizer = profile?.role.toLowerCase().contains('organizer') ?? false;
+    });
   }
 
   Future<void> _fetchList({bool showSnack = false}) async {
@@ -88,7 +100,7 @@ class _SchedulingPageState extends State<SchedulingPage> {
   }
 
   Future<void> _openForm({Schedule? initial}) async {
-    if (!widget.isOrganizer && initial == null) {
+    if (!_isOrganizer && initial == null) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
           content: Text('Hanya organizer yang dapat membuat jadwal.'),
@@ -230,16 +242,26 @@ class _SchedulingPageState extends State<SchedulingPage> {
     return Scaffold(
       appBar: AppBar(
         title: const Text('Jadwal Pertandingan'),
-        backgroundColor: AppColors.pacilBlueDarker2,
+        backgroundColor: AppColors.pacilBlueDarker1,
+        foregroundColor: Colors.white,
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.person_outline_rounded),
+            tooltip: 'Edit Profile',
+            onPressed: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (_) => const EditProfilePage(),
+                ),
+              );
+            },
+          ),
+        ],
       ),
       backgroundColor: AppColors.neutral50,
-      floatingActionButton: widget.isOrganizer
-          ? FloatingActionButton.extended(
-              onPressed: () => _openForm(),
-              backgroundColor: AppColors.pacilBlueDarker2,
-              icon: const Icon(Icons.add),
-              label: const Text('Buat Jadwal'),
-            )
+      floatingActionButton: _isOrganizer
+          ? _CreateScheduleFAB(onPressed: () => _openForm())
           : null,
       body: SafeArea(
         child: Padding(
@@ -252,7 +274,7 @@ class _SchedulingPageState extends State<SchedulingPage> {
               const SizedBox(height: 12),
               Expanded(
                 child: _items.isEmpty && !_loading
-                    ? const SizedBox.shrink()
+                    ? _buildEmptyState()
                     : LayoutBuilder(
                         builder: (BuildContext context, BoxConstraints c) {
                           final int crossAxisCount;
@@ -344,61 +366,98 @@ class _SchedulingPageState extends State<SchedulingPage> {
   }
 
   Widget _buildHeaderControls() {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: <Widget>[
-        const Text(
-          'Jadwal Pertandingan',
-          style: TextStyle(
-            fontSize: 22,
-            fontWeight: FontWeight.w600,
-            color: AppColors.neutral900,
-          ),
-        ),
-        const SizedBox(height: 12),
-        Row(
+    return Wrap(
+          spacing: 8,
+          runSpacing: 8,
+          crossAxisAlignment: WrapCrossAlignment.center,
           children: <Widget>[
-            Expanded(
-              child: Wrap(
-                spacing: 8,
-                runSpacing: 8,
-                crossAxisAlignment: WrapCrossAlignment.center,
-                children: <Widget>[
-                  ChoiceChip(
-                    label: const Text('Semua'),
-                    selected: _filter == 'all',
-                    selectedColor: AppColors.pacilBlueLight3,
-                    onSelected: (bool v) {
-                      if (!v) return;
-                      setState(() {
-                        _filter = 'all';
-                      });
-                      _fetchList();
-                    },
+                _FilterChip(
+                  label: 'Semua',
+                  isSelected: _filter == 'all',
+                  onSelected: () {
+                    setState(() {
+                      _filter = 'all';
+                    });
+                    _fetchList();
+                  },
+                ),
+                _FilterChip(
+                  label: 'Jadwal Saya',
+                  isSelected: _filter == 'mine',
+                  onSelected: () {
+                    setState(() {
+                      _filter = 'mine';
+                    });
+                    _fetchList();
+                  },
+                ),
+                Container(
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.circular(20),
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.black.withOpacity(0.08),
+                        blurRadius: 8,
+                        offset: const Offset(0, 2),
+                      ),
+                    ],
                   ),
-                  ChoiceChip(
-                    label: const Text('Jadwal Saya'),
-                    selected: _filter == 'mine',
-                    selectedColor: AppColors.pacilBlueLight3,
-                    onSelected: (bool v) {
-                      if (!v) return;
-                      setState(() {
-                        _filter = 'mine';
-                      });
-                      _fetchList();
-                    },
-                  ),
-                  IconButton(
+                  child: IconButton(
                     tooltip: 'Refresh',
                     onPressed: () => _fetchList(showSnack: true),
-                    icon: const Icon(Icons.refresh),
+                    icon: const Icon(Icons.refresh_rounded),
+                    color: AppColors.pacilBlueDarker1,
                   ),
-                ],
-              ),
-            ),
+                ),
           ],
-        ),
-      ],
+        );
+  }
+
+  Widget _buildEmptyState() {
+    return Center(
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Container(
+            padding: const EdgeInsets.all(24),
+            decoration: BoxDecoration(
+              color: Colors.white,
+              shape: BoxShape.circle,
+              boxShadow: [
+                BoxShadow(
+                  color: AppColors.pacilBlueDarker1.withOpacity(0.1),
+                  blurRadius: 20,
+                  offset: const Offset(0, 8),
+                ),
+              ],
+            ),
+            child: Icon(
+              Icons.calendar_today_outlined,
+              size: 64,
+              color: AppColors.pacilBlueDarker1.withOpacity(0.5),
+            ),
+          ),
+          const SizedBox(height: 24),
+          Text(
+            'Belum ada jadwal',
+            style: TextStyle(
+              fontSize: 20,
+              fontWeight: FontWeight.w600,
+              color: AppColors.neutral900,
+            ),
+          ),
+          const SizedBox(height: 8),
+          Text(
+            'Mulai buat jadwal pertandingan pertama Anda',
+            style: TextStyle(
+              fontSize: 14,
+              color: AppColors.neutral500,
+            ),
+            textAlign: TextAlign.center,
+          ),
+        ],
+      ),
     );
   }
 
@@ -440,6 +499,113 @@ class _SchedulingPageState extends State<SchedulingPage> {
       );
     }
     return const SizedBox.shrink();
+  }
+}
+
+class _FilterChip extends StatelessWidget {
+  const _FilterChip({
+    required this.label,
+    required this.isSelected,
+    required this.onSelected,
+  });
+
+  final String label;
+  final bool isSelected;
+  final VoidCallback onSelected;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      decoration: BoxDecoration(
+        color: isSelected ? AppColors.pacilBlueDarker1 : Colors.white,
+        borderRadius: BorderRadius.circular(20),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.08),
+            blurRadius: 8,
+            offset: const Offset(0, 2),
+          ),
+        ],
+      ),
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          onTap: onSelected,
+          borderRadius: BorderRadius.circular(20),
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+            child: Text(
+              label,
+              style: TextStyle(
+                fontSize: 14,
+                fontWeight: isSelected ? FontWeight.w600 : FontWeight.w500,
+                color: isSelected ? Colors.white : AppColors.neutral700,
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _CreateScheduleFAB extends StatelessWidget {
+  const _CreateScheduleFAB({required this.onPressed});
+
+  final VoidCallback onPressed;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(28),
+        gradient: const LinearGradient(
+          colors: [
+            AppColors.pacilBlueDarker1,
+            AppColors.pacilRedBase,
+          ],
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+        ),
+        boxShadow: [
+          BoxShadow(
+            color: AppColors.pacilBlueDarker1.withOpacity(0.4),
+            blurRadius: 20,
+            offset: const Offset(0, 8),
+            spreadRadius: 2,
+          ),
+        ],
+      ),
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          onTap: onPressed,
+          borderRadius: BorderRadius.circular(28),
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: const [
+                Icon(
+                  Icons.add_rounded,
+                  size: 28,
+                  color: Colors.white,
+                ),
+                SizedBox(width: 8),
+                Text(
+                  'Buat Jadwal',
+                  style: TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.w700,
+                    color: Colors.white,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
   }
 }
 

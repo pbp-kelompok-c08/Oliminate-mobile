@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:oliminate_mobile/features/user-profile/edit_profile.dart';
 import 'package:oliminate_mobile/left_drawer.dart';
 
 const _blueDark2 = Color(0xFF113352);
@@ -22,6 +23,20 @@ class LandingPage extends StatelessWidget {
       appBar: AppBar(
         title: const Text("Oliminate"),
         toolbarHeight: kToolbarHeight,
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.person_outline_rounded),
+            tooltip: 'Edit Profile',
+            onPressed: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (_) => const EditProfilePage(),
+                ),
+              );
+            },
+          ),
+        ],
       ),
       drawer: LeftDrawer(),
       backgroundColor: const Color(0xFFF5F7FB),
