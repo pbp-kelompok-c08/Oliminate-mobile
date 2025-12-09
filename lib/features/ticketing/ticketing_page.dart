@@ -34,7 +34,8 @@ class _TicketingPageState extends State<TicketingPage> {
   final Color _borderLight = const Color(0xFFE0E0E0);
 
   // API Base URL
-  static const String baseUrl = 'http://localhost:8000';
+  //static const String baseUrl = 'http://localhost:8000';
+  static const String baseUrl = 'https://adjie-m-oliminate.pbp.cs.ui.ac.id';
 
   // State
   List<Schedule> _schedules = [];
