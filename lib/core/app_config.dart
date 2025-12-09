@@ -11,7 +11,24 @@ class AppConfig {
       return _envBackendUrl;
     }
 
-    // Default ke production URL
-    return 'https://adjie-m-oliminate.pbp.cs.ui.ac.id';
+    if (kIsWeb) {
+      // Gunakan localhost supaya dianggap satu "site" dengan
+      // dev server Flutter web (mis. http://localhost:5173),
+      // sehingga cookie CSRF dari Django terkirim dengan benar.
+      return 'https://adjie-m-oliminate.pbp.cs.ui.ac.id';
+    }
+
+    switch (defaultTargetPlatform) {
+      case TargetPlatform.android:
+        return 'http://10.0.2.2:8000';
+      case TargetPlatform.iOS:
+      case TargetPlatform.macOS:
+        return 'http://localhost:8000';
+      case TargetPlatform.linux:
+      case TargetPlatform.windows:
+        return 'http://127.0.0.1:8000';
+      case TargetPlatform.fuchsia:
+        return 'http://10.0.2.2:8000';
+    }
   }
 }

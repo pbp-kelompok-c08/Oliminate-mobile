@@ -1,23 +1,28 @@
 import 'dart:convert';
 
 import 'package:http/http.dart' as http;
+import 'package:oliminate_mobile/core/django_client.dart';
 
 import '../models/schedule.dart';
 
 class SchedulingApiService {
   SchedulingApiService({
     required this.baseUrl,
-    this.defaultHeaders = const <String, String>{},
+    required this.djangoClient,
   });
 
   final String baseUrl;
-  final Map<String, String> defaultHeaders;
+  final DjangoClient djangoClient;
 
-  Map<String, String> _headers({bool form = false}) {
-    return <String, String>{
-      ...defaultHeaders,
-      if (form) 'Content-Type': 'application/x-www-form-urlencoded',
-    };
+  /// Helper untuk cek apakah response adalah HTML
+  bool _isHtmlResponse(String body) {
+    final trimmed = body.trim();
+    return trimmed.startsWith('<!DOCTYPE') ||
+        trimmed.startsWith('<!doctype') ||
+        trimmed.startsWith('<html') ||
+        trimmed.startsWith('<HTML') ||
+        trimmed.toLowerCase().contains('<!doctype') ||
+        trimmed.toLowerCase().contains('<html');
   }
 
   Uri _uri(String path, [Map<String, String>? query]) {
@@ -38,21 +43,23 @@ class SchedulingApiService {
 
   Future<List<Schedule>> fetchList({String filter = 'all'}) async {
     try {
-      final Uri requestUri = _uri('/scheduling/api/list/', <String, String>{'filter': filter});
-      
-      final http.Response res = await http.get(
-        requestUri,
-        headers: _headers(),
-      ).timeout(
-        const Duration(seconds: 30),
-        onTimeout: () {
-          throw Exception('Request timeout: Tidak dapat terhubung ke server');
-        },
+      // Pakai djangoClient.get() untuk handle cookies dan headers
+      final res = await djangoClient.get(
+        '/scheduling/api/list/?filter=$filter',
+        followRedirects: false,
       );
 
       if (res.statusCode != 200) {
         throw Exception(
-          'HTTP ${res.statusCode}: ${res.reasonPhrase}\nURL: $requestUri\nBody: ${res.body}',
+          'HTTP ${res.statusCode}: ${res.reasonPhrase}\nURL: ${_uri('/scheduling/api/list/')}\nBody: ${res.body}',
+        );
+      }
+
+      // Cek apakah response adalah HTML
+      if (_isHtmlResponse(res.body)) {
+        throw Exception(
+          'Server mengembalikan halaman HTML. Status: ${res.statusCode}\n'
+          'URL: ${_uri('/scheduling/api/list/')}',
         );
       }
 
@@ -85,73 +92,195 @@ class SchedulingApiService {
   }
 
   Future<Schedule> createSchedule(Map<String, String> formData) async {
-    final http.Response res = await http.post(
-      _uri('/scheduling/api/create/'),
-      headers: _headers(form: true),
-      body: formData,
-    );
+    try {
+      final res = await djangoClient.postForm(
+        '/scheduling/api/create/',
+        body: formData,
+        followRedirects: false,
+      );
 
-    final Map<String, dynamic> body =
-        jsonDecode(res.body) as Map<String, dynamic>;
+      // Cek apakah response adalah HTML (error page) - cek dulu sebelum decode
+      final bodyText = res.body;
+      
+      if (_isHtmlResponse(bodyText)) {
+        throw Exception(
+          'Server mengembalikan halaman HTML (${res.statusCode}).\n'
+          'Kemungkinan:\n'
+          '- Endpoint tidak ditemukan (404)\n'
+          '- Tidak ter-authenticate (302/403)\n'
+          '- CSRF token tidak valid\n'
+          'URL: ${_uri('/scheduling/api/create/')}\n'
+          'Response preview: ${bodyText.substring(0, bodyText.length > 200 ? 200 : bodyText.length)}',
+        );
+      }
 
-    if (res.statusCode != 200 || body['ok'] != true) {
-      throw Exception(body['errors'] ?? 'Gagal membuat jadwal');
+      // Cek status code
+      if (res.statusCode != 200) {
+        throw Exception(
+          'HTTP ${res.statusCode}: ${res.reasonPhrase}\n'
+          'URL: ${_uri('/scheduling/api/create/')}\n'
+          'Body: ${bodyText.substring(0, bodyText.length > 200 ? 200 : bodyText.length)}',
+        );
+      }
+
+      // Validasi response tidak kosong
+      if (bodyText.trim().isEmpty) {
+        throw Exception('Response kosong dari server');
+      }
+
+      // Decode JSON dengan error handling
+      Map<String, dynamic> body;
+      try {
+        body = jsonDecode(bodyText) as Map<String, dynamic>;
+      } on FormatException catch (e) {
+        throw Exception(
+          'Format response tidak valid (bukan JSON):\n$e\n'
+          'Response mungkin adalah HTML error page.\n'
+          'Response preview: ${bodyText.substring(0, bodyText.length > 200 ? 200 : bodyText.length)}',
+        );
+      }
+
+      if (body['ok'] != true) {
+        throw Exception(body['errors'] ?? 'Gagal membuat jadwal');
+      }
+
+      return Schedule.fromJson(body['item'] as Map<String, dynamic>);
+    } on FormatException catch (e) {
+      throw Exception(
+        'Format response tidak valid (bukan JSON):\n$e\n'
+        'Response mungkin adalah HTML error page.',
+      );
+    } catch (e) {
+      throw Exception('Error: $e');
     }
-
-    return Schedule.fromJson(body['item'] as Map<String, dynamic>);
   }
 
   Future<Schedule> updateSchedule(int id, Map<String, String> formData) async {
-    final http.Response res = await http.post(
-      _uri('/scheduling/api/$id/update/'),
-      headers: _headers(form: true),
-      body: formData,
-    );
+    try {
+      final res = await djangoClient.postForm(
+        '/scheduling/api/$id/update/',
+        body: formData,
+        followRedirects: false,
+      );
 
-    final Map<String, dynamic> body =
-        jsonDecode(res.body) as Map<String, dynamic>;
+      if (res.statusCode != 200) {
+        if (res.body.trim().startsWith('<!DOCTYPE') ||
+            res.body.trim().startsWith('<html')) {
+          throw Exception(
+            'Server mengembalikan halaman HTML. Status: ${res.statusCode}',
+          );
+        }
+        throw Exception('HTTP ${res.statusCode}: ${res.reasonPhrase}');
+      }
 
-    if (res.statusCode != 200 || body['ok'] != true) {
-      throw Exception(body['errors'] ?? 'Gagal mengupdate jadwal');
+      if (res.body.trim().startsWith('<!DOCTYPE') ||
+          res.body.trim().startsWith('<html')) {
+        throw Exception('Server mengembalikan HTML padahal diharapkan JSON');
+      }
+
+      final Map<String, dynamic> body =
+          jsonDecode(res.body) as Map<String, dynamic>;
+
+      if (body['ok'] != true) {
+        throw Exception(body['errors'] ?? 'Gagal mengupdate jadwal');
+      }
+
+      return Schedule.fromJson(body['item'] as Map<String, dynamic>);
+    } on FormatException catch (e) {
+      throw Exception('Format response tidak valid: $e');
+    } catch (e) {
+      throw Exception('Error: $e');
     }
-
-    return Schedule.fromJson(body['item'] as Map<String, dynamic>);
   }
 
   Future<void> deleteSchedule(int id) async {
-    final http.Response res = await http.post(
-      _uri('/scheduling/api/$id/delete/'),
-      headers: _headers(form: true),
-    );
+    try {
+      final res = await djangoClient.postForm(
+        '/scheduling/api/$id/delete/',
+        body: <String, String>{},
+        followRedirects: false,
+      );
 
-    final Map<String, dynamic> body =
-        jsonDecode(res.body) as Map<String, dynamic>;
+      if (res.statusCode != 200) {
+        if (res.body.trim().startsWith('<!DOCTYPE') ||
+            res.body.trim().startsWith('<html')) {
+          throw Exception(
+            'Server mengembalikan halaman HTML. Status: ${res.statusCode}',
+          );
+        }
+        throw Exception('HTTP ${res.statusCode}: ${res.reasonPhrase}');
+      }
 
-    if (res.statusCode != 200 || body['ok'] != true) {
-      throw Exception('Gagal menghapus jadwal');
+      if (res.body.trim().startsWith('<!DOCTYPE') ||
+          res.body.trim().startsWith('<html')) {
+        throw Exception('Server mengembalikan HTML padahal diharapkan JSON');
+      }
+
+      final Map<String, dynamic> body =
+          jsonDecode(res.body) as Map<String, dynamic>;
+
+      if (body['ok'] != true) {
+        throw Exception('Gagal menghapus jadwal');
+      }
+    } on FormatException catch (e) {
+      throw Exception('Format response tidak valid: $e');
+    } catch (e) {
+      throw Exception('Error: $e');
     }
   }
 
   Future<Map<String, dynamic>> makeCompleted(int id) async {
-    final http.Response res = await http.post(
-      _uri('/scheduling/api/$id/complete/'),
-      headers: _headers(form: true),
-    );
+    try {
+      final res = await djangoClient.postForm(
+        '/scheduling/api/$id/complete/',
+        body: <String, String>{},
+        followRedirects: false,
+      );
 
-    final Map<String, dynamic> body =
-        jsonDecode(res.body) as Map<String, dynamic>;
-    return body;
+      if (res.statusCode != 200) {
+        throw Exception('HTTP ${res.statusCode}: ${res.reasonPhrase}');
+      }
+
+      if (res.body.trim().startsWith('<!DOCTYPE') ||
+          res.body.trim().startsWith('<html')) {
+        throw Exception('Server mengembalikan HTML padahal diharapkan JSON');
+      }
+
+      final Map<String, dynamic> body =
+          jsonDecode(res.body) as Map<String, dynamic>;
+      return body;
+    } on FormatException catch (e) {
+      throw Exception('Format response tidak valid: $e');
+    } catch (e) {
+      throw Exception('Error: $e');
+    }
   }
 
   Future<Map<String, dynamic>> makeReviewable(int id) async {
-    final http.Response res = await http.post(
-      _uri('/scheduling/api/$id/make-reviewable/'),
-      headers: _headers(form: true),
-    );
+    try {
+      final res = await djangoClient.postForm(
+        '/scheduling/api/$id/make-reviewable/',
+        body: <String, String>{},
+        followRedirects: false,
+      );
 
-    final Map<String, dynamic> body =
-        jsonDecode(res.body) as Map<String, dynamic>;
-    return body;
+      if (res.statusCode != 200) {
+        throw Exception('HTTP ${res.statusCode}: ${res.reasonPhrase}');
+      }
+
+      if (res.body.trim().startsWith('<!DOCTYPE') ||
+          res.body.trim().startsWith('<html')) {
+        throw Exception('Server mengembalikan HTML padahal diharapkan JSON');
+      }
+
+      final Map<String, dynamic> body =
+          jsonDecode(res.body) as Map<String, dynamic>;
+      return body;
+    } on FormatException catch (e) {
+      throw Exception('Format response tidak valid: $e');
+    } catch (e) {
+      throw Exception('Error: $e');
+    }
   }
 }
 

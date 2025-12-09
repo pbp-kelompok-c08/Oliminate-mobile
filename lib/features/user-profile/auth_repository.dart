@@ -360,4 +360,6 @@ class AuthRepository {
     }
     return null;
   }
+
+  DjangoClient get client => _client;
 }

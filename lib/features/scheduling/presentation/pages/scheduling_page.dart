@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import 'package:oliminate_mobile/core/theme/app_colors.dart';
+import 'package:oliminate_mobile/features/user-profile/auth_repository.dart';
 import '../../data/datasources/scheduling_api_service.dart';
 import '../../data/models/schedule.dart';
 import '../widgets/schedule_card.dart';
@@ -37,9 +38,10 @@ class _SchedulingPageState extends State<SchedulingPage> {
   @override
   void initState() {
     super.initState();
+    final authRepo = AuthRepository.instance;
     _api = SchedulingApiService(
       baseUrl: widget.baseUrl,
-      defaultHeaders: widget.authHeaders ?? <String, String>{},
+      djangoClient: authRepo.client,
     );
     _fetchList();
   }
