@@ -27,4 +27,3 @@ class AppColors {
   static const Color neutral50 = Color(0xFFF5F5F5);
 }
 
-

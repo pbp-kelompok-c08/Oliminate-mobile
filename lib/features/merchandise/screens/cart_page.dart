@@ -1,13 +1,14 @@
 import 'package:flutter/material.dart';
-import 'package:http/http.dart' as http;
+import 'package:oliminate_mobile/features/merchandise/models/order_summary_model.dart';
+import 'package:oliminate_mobile/features/user-profile/auth_repository.dart';
 import 'dart:convert';
 import '../models/cart_item_model.dart'; // Ensure this path is correct
 
 class CartPage extends StatefulWidget {
-  final String baseUrl = 'http://localhost:8000'; // Match your other pages
+  final String baseUrl = 'https://adjie-m-oliminate.pbp.cs.ui.ac.id';
   final String apiEndpoint = '/merchandise/api/cart/';
-  final String updateEndpoint = '/merchandise/cart/item/'; // Base for item updates
-  final String checkoutEndpoint = '/merchandise/cart/checkout/';
+  final String updateEndpoint = '/merchandise/api/cart/item/'; // Base for item updates
+  final String checkoutEndpoint = '/merchandise/api/cart/checkout/';
 
   const CartPage({super.key});
 
@@ -31,11 +32,13 @@ class _CartPageState extends State<CartPage> {
   Future<void> fetchCart() async {
     setState(() { isLoading = true; });
     try {
-      final uri = Uri.parse('${widget.baseUrl}${widget.apiEndpoint}');
+      final uri = widget.apiEndpoint;
       
-      final response = await http.get(
-        uri,
-      );
+      // final response = await http.get(
+      //   uri,
+      // );
+
+      final response = await AuthRepository.instance.client.get(uri);
 
       if (response.statusCode == 200) {
         final data = jsonDecode(utf8.decode(response.bodyBytes));
@@ -63,24 +66,23 @@ class _CartPageState extends State<CartPage> {
     }
     
     // URL: /merchandise/cart/item/<uuid:item_id>/update/
-    final url = Uri.parse('${widget.baseUrl}${widget.updateEndpoint}$itemId/update/');
+    final url = Uri.parse('${widget.updateEndpoint}$itemId/update/').toString();
     
     try {
-      final response = await http.post(
-        url,
-        headers: {
-          'Content-Type': 'application/x-www-form-urlencoded', // Django expects form data for request.POST
-        },
-        // Send data as URL-encoded form data
-        body: 'quantity=$newQuantity',
-      );
+      // final response = await http.post(
+      //   url,
+      //   headers: {
+      //     'Content-Type': 'application/x-www-form-urlencoded', // Django expects form data for request.POST
+      //   },
+      //   // Send data as URL-encoded form data
+      //   body: 'quantity=$newQuantity',
+      // );
+
+      final response = await AuthRepository.instance.client.postForm(url, body: {'quantity':newQuantity.toString()});
 
       if (response.statusCode == 302 || response.statusCode == 200) {
         // Success means Django redirected back, refresh the cart
         await fetchCart(); 
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Quantity updated to $newQuantity.')),
-        );
       } else {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text('Failed to update quantity. Status: ${response.statusCode}')),
@@ -95,13 +97,14 @@ class _CartPageState extends State<CartPage> {
 
   Future<void> _removeItemFromCart(String itemId) async {
     // URL: /merchandise/cart/item/<uuid:item_id>/remove/
-    final url = Uri.parse('${widget.baseUrl}${widget.updateEndpoint}$itemId/remove/');
+    final url = Uri.parse('${widget.updateEndpoint}$itemId/remove/').toString();
 
     try {
-      final response = await http.post(
-        url,
-        body: {}, // Empty body for simple POST removal
-      );
+      // final response = await http.post(
+      //   url,
+      //   body: {}, // Empty body for simple POST removal
+      // );
+      final response = await AuthRepository.instance.client.postForm(url, body: {});
 
       if (response.statusCode == 302 || response.statusCode == 200) {
         // Success means Django redirected back, refresh the cart
@@ -128,20 +131,43 @@ class _CartPageState extends State<CartPage> {
     setState(() { isCheckingOut = true; });
 
     try {
-      final uri = Uri.parse('${widget.baseUrl}${widget.checkoutEndpoint}');
+      final uri = widget.checkoutEndpoint;
       
-      final response = await http.post(
-        uri
-      );
+      // final response = await http.post(
+      //   uri
+      // );
+      final response = await AuthRepository.instance.client.postForm(uri, body: {});
+
 
       if (response.statusCode == 302 || response.statusCode == 200) {
+        final data = jsonDecode(utf8.decode(response.bodyBytes));
+        // final String orderId = data['order_id'];
+        final orderSummary = OrderSummary.fromJson(data);
+
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Checkout berhasil! Redirecting to payment...')),
+          const SnackBar(content: Text('Checkout berhasil! Redirecting...')),
         );
-        await fetchCart(); 
+        
+        // 1. Clear current cart state
+        setState(() {
+            cart = null;
+        });
+
+        // 2. Navigate to the success page and replace the current CartPage
+        if (mounted) {
+            Navigator.pop(context, {'order_summary': orderSummary, 'success': true});
+        } 
       } else {
+        // Handle 400 Bad Request or other server errors
+        String message = 'Checkout gagal. Status: ${response.statusCode}';
+        if (response.body.isNotEmpty) {
+            final errorData = jsonDecode(utf8.decode(response.bodyBytes));
+            if (errorData.containsKey('message')) {
+                message = errorData['message']; // Display the specific error from Django
+            }
+        }
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Checkout gagal. Status: ${response.statusCode}')),
+          SnackBar(content: Text(message)),
         );
       }
     } catch (e) {
@@ -187,6 +213,14 @@ class _CartPageState extends State<CartPage> {
     );
   }
 
+  // --- 1. Create the proxy URL generator function ---
+  String _getProxyImageUrl(String? imageUrl) {
+      // You must URL encode the image URL before embedding it in the query string
+      final safeUrl = imageUrl ?? '';
+      final encodedUrl = Uri.encodeComponent(safeUrl);
+      return '${widget.baseUrl}/merchandise/proxy-image/?url=$encodedUrl';
+  }
+
   // --- Cart Item Widget (Now accepts callbacks) ---
   Widget _buildCartItem(
     CartItem item, 
@@ -195,6 +229,7 @@ class _CartPageState extends State<CartPage> {
   ) {
     // The total price for this specific item (Qty * Price)
     final itemTotalPrice = item.quantity * item.merchandisePrice;
+    final proxyUrl = _getProxyImageUrl(item.merchandiseImage);
 
     return Card(
       margin: const EdgeInsets.only(bottom: 16),
@@ -206,16 +241,36 @@ class _CartPageState extends State<CartPage> {
             Row(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                // Image Placeholder
-                Container(
-                  width: 60,
-                  height: 60,
-                  decoration: BoxDecoration(
-                    color: Colors.grey[200],
-                    borderRadius: BorderRadius.circular(8),
-                  ),
-                  child: const Icon(Icons.shopping_bag_outlined, color: Colors.grey, size: 30),
-                ),
+                // --- Image Widget (The target for the fix) ---
+                    Container(
+                        width: 80,
+                        height: 80,
+                        margin: const EdgeInsets.only(right: 12),
+                        decoration: BoxDecoration(
+                            color: Colors.grey[200],
+                            borderRadius: BorderRadius.circular(8),
+                        ),
+                        child: ClipRRect(
+                            borderRadius: BorderRadius.circular(8),
+                            child: Image.network(
+                                proxyUrl, // <--- USE THE PROXY URL HERE
+                                fit: BoxFit.cover,
+                                loadingBuilder: (context, child, loadingProgress) {
+                                    if (loadingProgress == null) return child;
+                                    return Center(
+                                        child: CircularProgressIndicator(
+                                            value: loadingProgress.expectedTotalBytes != null
+                                                ? loadingProgress.cumulativeBytesLoaded / loadingProgress.expectedTotalBytes!
+                                                : null,
+                                        ),
+                                    );
+                                },
+                                errorBuilder: (context, error, stackTrace) {
+                                    return const Center(child: Icon(Icons.broken_image, color: Colors.grey));
+                                },
+                            ),
+                        ),
+                    ),
                 const SizedBox(width: 16),
                 Expanded(
                   child: Column(
@@ -226,6 +281,14 @@ class _CartPageState extends State<CartPage> {
                         style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
                         maxLines: 2,
                         overflow: TextOverflow.ellipsis,
+                      ),
+                      Text(
+                          'Stock: ${item.stock}', 
+                          style: TextStyle(
+                              fontSize: 14, 
+                              // Optional: Highlight if the ordered quantity exceeds stock
+                              color: item.quantity > item.stock ? Colors.red : Colors.grey
+                          )
                       ),
                       const SizedBox(height: 4),
                       Text(

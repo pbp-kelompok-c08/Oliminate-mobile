@@ -15,7 +15,7 @@ class AppConfig {
       // Gunakan localhost supaya dianggap satu "site" dengan
       // dev server Flutter web (mis. http://localhost:5173),
       // sehingga cookie CSRF dari Django terkirim dengan benar.
-      return 'http://localhost:8000';
+      return 'https://adjie-m-oliminate.pbp.cs.ui.ac.id';
     }
 
     switch (defaultTargetPlatform) {

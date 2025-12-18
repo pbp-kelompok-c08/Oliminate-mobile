@@ -1,7 +1,6 @@
 import 'dart:async';
 import 'dart:convert';
 
-import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
 import 'package:oliminate_mobile/core/http_client_factory_stub.dart'
     if (dart.library.html) 'package:oliminate_mobile/core/http_client_factory_web.dart';
@@ -88,29 +87,17 @@ class DjangoClient {
   }
 
   Future<http.Response> get(String path, {bool followRedirects = true}) async {
-    try {
-      final Uri requestUri = _uri(path);
-      final req = http.Request('GET', requestUri);
-      _attachHeaders(req);
-      req.followRedirects = followRedirects;
-      req.maxRedirects = 0;
+    final req = http.Request('GET', _uri(path));
+    _attachHeaders(req);
+    req.followRedirects = followRedirects;
+    req.maxRedirects = 0;
 
-      final streamed = await _client.send(req).timeout(_defaultTimeout);
-      final res = await http.Response.fromStream(streamed);
-      _updateCookiesFrom(res);
-      await saveCookies();
-      _extractCsrfFromHtml(res.body);
-      return res;
-    } on http.ClientException catch (e) {
-      debugPrint('ClientException in GET $path: ${e.message}');
-      rethrow;
-    } on TimeoutException catch (e) {
-      debugPrint('TimeoutException in GET $path: $e');
-      rethrow;
-    } catch (e) {
-      debugPrint('Unexpected error in GET $path: $e');
-      rethrow;
-    }
+    final streamed = await _client.send(req).timeout(_defaultTimeout);
+    final res = await http.Response.fromStream(streamed);
+    _updateCookiesFrom(res);
+    await saveCookies();
+    _extractCsrfFromHtml(res.body);
+    return res;
   }
 
   Future<http.Response> postForm(

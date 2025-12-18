@@ -1,10 +1,6 @@
 import 'package:flutter/material.dart';
-import 'package:http/http.dart' as http;
-import 'dart:convert';
+import 'package:oliminate_mobile/features/user-profile/auth_repository.dart';
 import '../models/merchandise_model.dart'; // Merchandise and CategoryChoice
-import '../models/cart_item_model.dart'; // For the fixed cookie constants
-
-const String _kBaseUrl = 'http://localhost:8000';
 
 class MerchandiseFormPage extends StatefulWidget {
   // If editing, this will contain the existing merchandise data. Null for creation.
@@ -81,9 +77,7 @@ class _MerchandiseFormPageState extends State<MerchandiseFormPage> {
     // Update URL: http://localhost:8000/merchandise/<id>/edit/
     final String path = isUpdate 
         ? '/merchandise/list/${widget.merchandise!.id}/edit/' 
-        : '/merchandise/list/create';
-        
-    final url = Uri.parse('$_kBaseUrl$path');
+        : '/merchandise/list/create/';
 
     try {
       // Data payload - must match the fields expected by MerchandiseForm in Django
@@ -97,13 +91,14 @@ class _MerchandiseFormPageState extends State<MerchandiseFormPage> {
         'image_url': _imageUrlController.text,
       };
 
-      final response = await http.post(
-        url,
-        headers: {
-          'Content-Type': 'application/x-www-form-urlencoded', // Required by Django forms
-        },
-        body: body,
-      );
+      final response = await AuthRepository.instance.client.postForm(path, body: body);
+      // final response = await http.post(
+      //   url,
+      //   headers: {
+      //     'Content-Type': 'application/json',
+      //   },
+      //   body: json.encode(body),
+      // );
 
       // Check for successful redirection (302) or 200 OK (if Django doesn't redirect)
       if (response.statusCode == 302 || response.statusCode == 200) {

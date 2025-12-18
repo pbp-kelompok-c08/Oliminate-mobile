@@ -1,12 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
-import 'package:oliminate_mobile/core/django_client.dart';
+import 'package:oliminate_mobile/features/merchandise/models/order_summary_model.dart';
+import 'package:oliminate_mobile/features/merchandise/screens/cart_paid.dart';
 import 'package:oliminate_mobile/features/merchandise/screens/merchandise_form_page.dart';
 import 'package:oliminate_mobile/features/user-profile/auth_repository.dart';
 import 'package:oliminate_mobile/left_drawer.dart';
-import 'package:provider/provider.dart';
 import 'dart:convert';
-import 'package:pbp_django_auth/pbp_django_auth.dart';
 import '../models/merchandise_model.dart'; // Import the new model file
 import 'cart_page.dart';
 import 'merchandise_detail.dart'; // Import the CartPage
@@ -14,7 +13,7 @@ import 'merchandise_detail.dart'; // Import the CartPage
 // --- Main Widget ---
 
 class MerchandisePage extends StatefulWidget {
-  final String apiUrl = 'http://localhost:8000/merchandise/list/'; 
+  final String apiUrl = 'https://adjie-m-oliminate.pbp.cs.ui.ac.id/merchandise/list/'; 
   
   const MerchandisePage({super.key});
 
@@ -138,14 +137,17 @@ class _MerchandisePageState extends State<MerchandisePage> {
   // --- NEW: Management API Calls ---
 
   // Function to simulate navigation to an edit form (not implemented here)
-  void _editMerchandise(Merchandise merch) {
+  void _editMerchandise(Merchandise merch) async {
     // Navigate to Detail Page and pass the current Merchandise object
-    Navigator.push(
+    final result = await Navigator.push(
       context,
       MaterialPageRoute(
         builder: (context) => MerchandiseFormPage(merchandise: merch, categoryChoices: categoryChoices),
       ),
     );
+    if (result == true) {
+      fetchMerchandise();
+    }
   }
 
 
@@ -173,16 +175,14 @@ class _MerchandisePageState extends State<MerchandisePage> {
 
     if (confirmed != true) return;
 
-    // 2. Perform API call
-    final baseUrl = widget.apiUrl.substring(0, widget.apiUrl.indexOf('/merchandise'));
     // URL: /merchandise/<uuid:id>/delete/
-    final url = Uri.parse('$baseUrl/merchandise/$merchandiseId/delete/').toString();
+    final url = Uri.parse('/merchandise/list/$merchandiseId/delete/').toString();
 
     try {
       // final response = await http.post(
       //   url,
       // );
-      final response = await _authRepo.client.get(url);
+      final response = await _authRepo.client.postForm(url, body:{});
 
       if (response.statusCode == 302 || response.statusCode == 200) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -223,25 +223,47 @@ class _MerchandisePageState extends State<MerchandisePage> {
             IconButton(
               icon: const Icon(Icons.add_box),
               tooltip: 'Add New Merchandise',
-              onPressed: () {
-                Navigator.push(
+              onPressed: () async {
+                final result = await Navigator.push(
                   context,
                   MaterialPageRoute(
                     builder: (context) => MerchandiseFormPage(merchandise: null, categoryChoices: categoryChoices),
                   ),
                 );
+                if (result == true) {
+                  fetchMerchandise();
+                }
               },
             )
           else
             IconButton(
               icon: const Icon(Icons.shopping_cart),
-              onPressed: () {
-                Navigator.push(
+              onPressed: () async {
+                final result = await Navigator.push(
                   context,
                   MaterialPageRoute(
                     builder: (context) => const CartPage(),
                   ),
                 );
+
+                // --- CRITICAL CHECK: Check if the result contains the OrderSummary object ---
+                if (result is Map<String, dynamic> && result.containsKey('order_summary')) { 
+                    final OrderSummary orderSummary = result['order_summary'];
+                    
+                    // 1. Refresh the merchandise list stock
+                    await fetchMerchandise(); 
+                    
+                    // 2. Immediately push the CartPaidPage (OrderSuccessPage)
+                    if (mounted) {
+                        Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                                // Pass the OrderSummary object to the success screen
+                                builder: (context) => CartPaidPage(orderSummary: orderSummary),
+                            ),
+                        );
+                    }
+                }
               },
             ),
         ],
@@ -369,7 +391,7 @@ class _MerchandiseCardState extends State<_MerchandiseCard> {
     // } catch (e) {
     //   return '${widget.baseUrl}$url';
     // }
-    return 'http://localhost:8000/merchandise/proxy-image/?url=${Uri.encodeComponent(widget.merch.imageUrl.toString())}';
+    return 'https://adjie-m-oliminate.pbp.cs.ui.ac.id/merchandise/proxy-image/?url=${Uri.encodeComponent(widget.merch.imageUrl.toString())}';
   }
   
   // --- Add to Cart API Implementation ---

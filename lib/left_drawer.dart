@@ -1,5 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:oliminate_mobile/features/main-page/main_page.dart';
+import 'package:oliminate_mobile/features/review/review_page.dart';
+import 'package:oliminate_mobile/features/scheduling/presentation/pages/scheduling_page.dart';
+import 'package:oliminate_mobile/features/ticketing/ticketing_page.dart';
 
 import 'features/merchandise/screens/merchandise_page.dart';
 import 'features/user-profile/main_profile.dart';
@@ -47,24 +50,24 @@ class LeftDrawer extends StatelessWidget {
             leading: const Icon(Icons.schedule),
             title: const Text('Schedule'),
             onTap: () {
-              // Navigator.pushReplacement(
-              //     context,
-              //     MaterialPageRoute(
-              //       // Assuming you'll have a dedicated NewsListPage later
-              //       builder: (context) => const SchedulePage(), 
-              //     ));
+              Navigator.pushReplacement(
+                  context,
+                  MaterialPageRoute(
+                    // Assuming you'll have a dedicated NewsListPage later
+                    builder: (context) => const SchedulingPage(baseUrl: 'https://adjie-m-oliminate.pbp.cs.ui.ac.id/'), 
+                  ));
             },
           ),
           ListTile(
             leading: const Icon(Icons.bookmark),
             title: const Text('Ticketing'),
             onTap: () {
-              // Navigator.pushReplacement(
-              //     context,
-              //     MaterialPageRoute(
-              //       // Assuming you'll have a dedicated NewsListPage later
-              //       builder: (context) => const TicketingPage(), 
-              //     ));
+              Navigator.pushReplacement(
+                  context,
+                  MaterialPageRoute(
+                    // Assuming you'll have a dedicated NewsListPage later
+                    builder: (context) => const TicketingPage(), 
+                  ));
             },
           ),
           ListTile(
@@ -85,12 +88,12 @@ class LeftDrawer extends StatelessWidget {
             leading: const Icon(Icons.reviews),
             title: const Text('Review'),
             onTap: () {
-              // Navigator.pushReplacement(
-              //     context,
-              //     MaterialPageRoute(
-              //       // Assuming you'll have a dedicated NewsListPage later
-              //       builder: (context) => const ReviewPage(), 
-              //     ));
+              Navigator.pushReplacement(
+                  context,
+                  MaterialPageRoute(
+                    // Assuming you'll have a dedicated NewsListPage later
+                    builder: (context) => const ReviewPage(), 
+                  ));
             },
           ),
         ],

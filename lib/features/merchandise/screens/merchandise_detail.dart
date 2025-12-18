@@ -8,7 +8,6 @@ class MerchandiseDetailScreen extends StatefulWidget {
   // IMPORTANT: The API URL for adding an item to the cart
   // Assuming the base URL is the same as your merchandise_page.dart
   // and the endpoint is merchandise/cart/add/<uuid:merchandise_id>/
-  final String baseUrl = 'http://localhost:8000';
   final Merchandise merchandise;
   final String? userRole;
 
@@ -45,7 +44,7 @@ class _MerchandiseDetailScreenState extends State<MerchandiseDetailScreen> {
 
     // Construct the full URL for the cart_add_item endpoint
     final url = Uri.parse(
-        '${widget.baseUrl}/merchandise/cart/add/${widget.merchandise.id}/');
+        'https://adjie-m-oliminate.pbp.cs.ui.ac.id/merchandise/cart/add/${widget.merchandise.id}/');
 
     try {
       final response = await http.post(
@@ -94,7 +93,7 @@ class _MerchandiseDetailScreenState extends State<MerchandiseDetailScreen> {
   Widget build(BuildContext context) {
     bool isStockAvailable = widget.merchandise.stock > 0;
     String formattedPrice = _currencyFormatter.format(widget.merchandise.price);
-    final resolvedImageUrl = 'http://localhost:8000/merchandise/proxy-image/?url=${Uri.encodeComponent(widget.merchandise.imageUrl.toString())}';
+    final resolvedImageUrl = 'https://adjie-m-oliminate.pbp.cs.ui.ac.id/merchandise/proxy-image/?url=${Uri.encodeComponent(widget.merchandise.imageUrl.toString())}';
 
     return Scaffold(
       appBar: AppBar(

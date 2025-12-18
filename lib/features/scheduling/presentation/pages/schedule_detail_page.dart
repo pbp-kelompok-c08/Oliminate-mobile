@@ -240,4 +240,3 @@ class ScheduleDetailPage extends StatelessWidget {
   }
 }
 
-
