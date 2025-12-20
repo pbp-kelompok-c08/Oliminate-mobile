@@ -96,9 +96,16 @@ class _MerchandiseDetailScreenState extends State<MerchandiseDetailScreen> {
     final resolvedImageUrl = 'https://adjie-m-oliminate.pbp.cs.ui.ac.id/merchandise/proxy-image/?url=${Uri.encodeComponent(widget.merchandise.imageUrl.toString())}';
 
     return Scaffold(
+      backgroundColor: const Color(0xFFF5F5F5),
       appBar: AppBar(
-        title: Text(widget.merchandise.name),
-        backgroundColor: Colors.blueAccent,
+        title: Text(
+          widget.merchandise.name,
+          style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 18),
+        ),
+        backgroundColor: const Color(0xFF113352),
+        foregroundColor: Colors.white,
+        elevation: 0.5,
+        centerTitle: false,
       ),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(16.0),

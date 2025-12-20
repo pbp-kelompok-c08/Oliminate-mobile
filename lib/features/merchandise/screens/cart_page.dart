@@ -183,9 +183,16 @@ class _CartPageState extends State<CartPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      backgroundColor: const Color(0xFFF5F5F5),
       appBar: AppBar(
-        title: const Text('Keranjang Belanja'),
-        backgroundColor: Colors.blue,
+        title: const Text(
+          'Keranjang Belanja',
+          style: TextStyle(fontWeight: FontWeight.w700, fontSize: 18),
+        ),
+        backgroundColor: const Color(0xFF113352),
+        foregroundColor: Colors.white,
+        elevation: 0.5,
+        centerTitle: false,
       ),
       body: isLoading
           ? const Center(child: CircularProgressIndicator())

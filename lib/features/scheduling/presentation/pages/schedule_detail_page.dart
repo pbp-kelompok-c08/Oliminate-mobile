@@ -17,14 +17,28 @@ class ScheduleDetailPage extends StatelessWidget {
   final VoidCallback? onEdit;
   final VoidCallback? onDelete;
 
+  // Color palette matching ticketing design
+  static const Color _primaryDark = Color(0xFF113352);
+  static const Color _primaryBlue = Color(0xFF3293EC);
+  static const Color _primaryRed = Color(0xFFEA3C43);
+  static const Color _neutralBg = Color(0xFFF5F5F5);
+  static const Color _textDark = Color(0xFF113352);
+  static const Color _textGrey = Color(0xFF3D3D3D);
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text('${schedule.team1} vs ${schedule.team2}'),
-        backgroundColor: AppColors.pacilBlueDarker2,
+        title: Text(
+          '${schedule.team1} vs ${schedule.team2}',
+          style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 18),
+        ),
+        backgroundColor: _primaryDark,
+        foregroundColor: Colors.white,
+        elevation: 0.5,
+        centerTitle: false,
       ),
-      backgroundColor: AppColors.neutral50,
+      backgroundColor: _neutralBg,
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(16),
         child: Column(
@@ -67,9 +81,19 @@ class ScheduleDetailPage extends StatelessWidget {
   }
 
   Widget _buildInfoCard() {
-    return Card(
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-      elevation: 1,
+    return Container(
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: const Color(0xFFE0E0E0), width: 1),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.04),
+            blurRadius: 10,
+            offset: const Offset(0, 2),
+          ),
+        ],
+      ),
       child: Padding(
         padding: const EdgeInsets.all(20),
         child: Column(
@@ -78,17 +102,17 @@ class ScheduleDetailPage extends StatelessWidget {
             Text(
               '${schedule.team1} vs ${schedule.team2}',
               style: const TextStyle(
-                fontSize: 22,
-                fontWeight: FontWeight.w600,
-                color: AppColors.neutral900,
+                fontSize: 20,
+                fontWeight: FontWeight.w700,
+                color: Color(0xFF113352),
               ),
             ),
             const SizedBox(height: 6),
             Text(
               schedule.category,
               style: const TextStyle(
-                fontSize: 16,
-                color: AppColors.neutral700,
+                fontSize: 14,
+                color: Color(0xFF3D3D3D),
               ),
             ),
             const SizedBox(height: 16),
@@ -111,14 +135,14 @@ class ScheduleDetailPage extends StatelessWidget {
   Widget _infoRow(IconData icon, String text) {
     return Row(
       children: <Widget>[
-        Icon(icon, size: 18, color: AppColors.neutral500),
-        const SizedBox(width: 8),
+        Icon(icon, size: 16, color: const Color(0xFF3D3D3D)),
+        const SizedBox(width: 10),
         Expanded(
           child: Text(
             text,
             style: const TextStyle(
-              fontSize: 15,
-              color: AppColors.neutral700,
+              fontSize: 14,
+              color: Color(0xFF3D3D3D),
             ),
           ),
         ),

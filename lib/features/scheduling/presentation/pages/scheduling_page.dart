@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 
 import 'package:oliminate_mobile/core/theme/app_colors.dart';
 import 'package:oliminate_mobile/features/user-profile/auth_repository.dart';
-import 'package:oliminate_mobile/features/user-profile/edit_profile.dart';
+import 'package:oliminate_mobile/features/user-profile/main_profile.dart';
 import '../../data/datasources/scheduling_api_service.dart';
 import '../../data/models/schedule.dart';
 import '../widgets/schedule_card.dart';
@@ -239,27 +239,37 @@ class _SchedulingPageState extends State<SchedulingPage> {
 
   @override
   Widget build(BuildContext context) {
+    // Color palette matching ticketing design
+    const Color primaryDark = Color(0xFF113352);
+    const Color neutralBg = Color(0xFFF5F5F5);
+    
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Jadwal Pertandingan'),
-        backgroundColor: AppColors.pacilBlueDarker1,
+        title: const Text(
+          'Jadwal Pertandingan',
+          style: TextStyle(fontWeight: FontWeight.w700, fontSize: 18),
+        ),
+        backgroundColor: primaryDark,
         foregroundColor: Colors.white,
+        elevation: 0.5,
+        centerTitle: false,
+        automaticallyImplyLeading: false,
         actions: [
           IconButton(
             icon: const Icon(Icons.person_outline_rounded),
-            tooltip: 'Edit Profile',
+            tooltip: 'Profil',
             onPressed: () {
               Navigator.push(
                 context,
                 MaterialPageRoute(
-                  builder: (_) => const EditProfilePage(),
+                  builder: (_) => const ProfilePage(),
                 ),
               );
             },
           ),
         ],
       ),
-      backgroundColor: AppColors.neutral50,
+      backgroundColor: neutralBg,
       floatingActionButton: _isOrganizer
           ? _CreateScheduleFAB(onPressed: () => _openForm())
           : null,
@@ -294,8 +304,8 @@ class _SchedulingPageState extends State<SchedulingPage> {
                             crossAxisSpacing: 12,
                             mainAxisSpacing: 12,
                             childAspectRatio:
-                                singleColumn ? 0.9 : 0.95,
-                            mainAxisExtent: singleColumn ? 520 : null,
+                                singleColumn ? 0.7 : 0.85,
+                            mainAxisExtent: singleColumn ? 680 : null,
                           );
 
                           return RefreshIndicator(
@@ -513,15 +523,25 @@ class _FilterChip extends StatelessWidget {
   final bool isSelected;
   final VoidCallback onSelected;
 
+  // Color palette matching ticketing design
+  static const Color _primaryDark = Color(0xFF113352);
+  static const Color _primaryBlue = Color(0xFF3293EC);
+  static const Color _textGrey = Color(0xFF3D3D3D);
+  static const Color _borderLight = Color(0xFFE0E0E0);
+
   @override
   Widget build(BuildContext context) {
     return Container(
       decoration: BoxDecoration(
-        color: isSelected ? AppColors.pacilBlueDarker1 : Colors.white,
-        borderRadius: BorderRadius.circular(20),
+        color: isSelected ? _primaryDark : Colors.white,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(
+          color: isSelected ? _primaryDark : _borderLight,
+          width: 1,
+        ),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.08),
+            color: Colors.black.withOpacity(0.04),
             blurRadius: 8,
             offset: const Offset(0, 2),
           ),
@@ -531,15 +551,15 @@ class _FilterChip extends StatelessWidget {
         color: Colors.transparent,
         child: InkWell(
           onTap: onSelected,
-          borderRadius: BorderRadius.circular(20),
+          borderRadius: BorderRadius.circular(12),
           child: Padding(
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
             child: Text(
               label,
               style: TextStyle(
-                fontSize: 14,
-                fontWeight: isSelected ? FontWeight.w600 : FontWeight.w500,
-                color: isSelected ? Colors.white : AppColors.neutral700,
+                fontSize: 13,
+                fontWeight: FontWeight.w600,
+                color: isSelected ? Colors.white : _textGrey,
               ),
             ),
           ),
@@ -554,25 +574,20 @@ class _CreateScheduleFAB extends StatelessWidget {
 
   final VoidCallback onPressed;
 
+  // Color palette matching ticketing design
+  static const Color _accentTeal = Color(0xFF0D9488);
+
   @override
   Widget build(BuildContext context) {
     return Container(
       decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(28),
-        gradient: const LinearGradient(
-          colors: [
-            AppColors.pacilBlueDarker1,
-            AppColors.pacilRedBase,
-          ],
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-        ),
+        borderRadius: BorderRadius.circular(12),
+        color: _accentTeal,
         boxShadow: [
           BoxShadow(
-            color: AppColors.pacilBlueDarker1.withOpacity(0.4),
-            blurRadius: 20,
-            offset: const Offset(0, 8),
-            spreadRadius: 2,
+            color: _accentTeal.withOpacity(0.4),
+            blurRadius: 12,
+            offset: const Offset(0, 4),
           ),
         ],
       ),
@@ -580,22 +595,22 @@ class _CreateScheduleFAB extends StatelessWidget {
         color: Colors.transparent,
         child: InkWell(
           onTap: onPressed,
-          borderRadius: BorderRadius.circular(28),
+          borderRadius: BorderRadius.circular(12),
           child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
+            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
             child: Row(
               mainAxisSize: MainAxisSize.min,
               children: const [
                 Icon(
                   Icons.add_rounded,
-                  size: 28,
+                  size: 22,
                   color: Colors.white,
                 ),
                 SizedBox(width: 8),
                 Text(
                   'Buat Jadwal',
                   style: TextStyle(
-                    fontSize: 16,
+                    fontSize: 15,
                     fontWeight: FontWeight.w700,
                     color: Colors.white,
                   ),

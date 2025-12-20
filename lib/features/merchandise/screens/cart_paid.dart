@@ -27,9 +27,16 @@ class CartPaidPage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      backgroundColor: const Color(0xFFF5F5F5),
       appBar: AppBar(
-        title: const Text('Pembayaran Berhasil'),
-        backgroundColor: Colors.blueAccent,
+        title: const Text(
+          'Pembayaran Berhasil',
+          style: TextStyle(fontWeight: FontWeight.w700, fontSize: 18),
+        ),
+        backgroundColor: const Color(0xFF113352),
+        foregroundColor: Colors.white,
+        elevation: 0.5,
+        centerTitle: false,
       ),
       body: Center(
         child: SingleChildScrollView(
@@ -110,15 +117,14 @@ class CartPaidPage extends StatelessWidget {
                   // --- Action Button ---
                   ElevatedButton(
                     onPressed: () {
-                      // Navigate back to the Merchandise List Page and clear the cart/order success screen
                       Navigator.of(context).popUntil((route) => route.isFirst);
                     },
                     style: ElevatedButton.styleFrom(
-                      backgroundColor: Colors.blue,
+                      backgroundColor: const Color(0xFF0D9488),
                       padding: const EdgeInsets.symmetric(vertical: 14),
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
                     ),
-                    child: const Text('Lanjut Belanja', style: TextStyle(color: Colors.white, fontSize: 16)),
+                    child: const Text('Lanjut Belanja', style: TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.w600)),
                   ),
                 ],
               ),

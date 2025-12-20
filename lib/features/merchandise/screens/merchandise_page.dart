@@ -4,11 +4,11 @@ import 'package:oliminate_mobile/features/merchandise/models/order_summary_model
 import 'package:oliminate_mobile/features/merchandise/screens/cart_paid.dart';
 import 'package:oliminate_mobile/features/merchandise/screens/merchandise_form_page.dart';
 import 'package:oliminate_mobile/features/user-profile/auth_repository.dart';
-import 'package:oliminate_mobile/left_drawer.dart';
+import 'package:oliminate_mobile/features/user-profile/main_profile.dart';
 import 'dart:convert';
-import '../models/merchandise_model.dart'; // Import the new model file
+import '../models/merchandise_model.dart';
 import 'cart_page.dart';
-import 'merchandise_detail.dart'; // Import the CartPage
+import 'merchandise_detail.dart';
 
 // --- Main Widget ---
 
@@ -209,106 +209,169 @@ class _MerchandisePageState extends State<MerchandisePage> {
 
   // ---------------------------------
 
+  // Color palette matching ticketing design
+  static const Color _primaryDark = Color(0xFF113352);
+  static const Color _primaryBlue = Color(0xFF3293EC);
+  static const Color _accentTeal = Color(0xFF0D9488);
+  static const Color _primaryRed = Color(0xFFEA3C43);
+  static const Color _neutralBg = Color(0xFFF5F5F5);
+  static const Color _textDark = Color(0xFF113352);
+  static const Color _textGrey = Color(0xFF3D3D3D);
+  static const Color _borderLight = Color(0xFFE0E0E0);
 
   @override
   Widget build(BuildContext context) {
     final baseUrl = widget.apiUrl.substring(0, widget.apiUrl.indexOf('/merchandise'));
 
     return Scaffold(
+      backgroundColor: _neutralBg,
       appBar: AppBar(
-        title: const Text('Merchandise Catalog'),
-        backgroundColor: Colors.blueAccent,
+        title: const Text(
+          'Merchandise',
+          style: TextStyle(fontWeight: FontWeight.w700, fontSize: 18),
+        ),
+        backgroundColor: _primaryDark,
+        foregroundColor: Colors.white,
+        elevation: 0.5,
+        centerTitle: false,
+        automaticallyImplyLeading: false,
         actions: [
-          if (isLoggedIn && userRole?.toLowerCase() == 'organizer') // Add a button for creating new items if the user is an organizer
+          // Cart icon for users
+          if (isLoggedIn && userRole?.toLowerCase() != 'organizer')
             IconButton(
-              icon: const Icon(Icons.add_box),
-              tooltip: 'Add New Merchandise',
+              icon: const Icon(Icons.shopping_cart_outlined),
+              tooltip: 'Keranjang',
               onPressed: () async {
                 final result = await Navigator.push(
                   context,
-                  MaterialPageRoute(
-                    builder: (context) => MerchandiseFormPage(merchandise: null, categoryChoices: categoryChoices),
-                  ),
+                  MaterialPageRoute(builder: (context) => const CartPage()),
                 );
-                if (result == true) {
-                  fetchMerchandise();
-                }
-              },
-            )
-          else
-            IconButton(
-              icon: const Icon(Icons.shopping_cart),
-              onPressed: () async {
-                final result = await Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                    builder: (context) => const CartPage(),
-                  ),
-                );
-
-                // --- CRITICAL CHECK: Check if the result contains the OrderSummary object ---
-                if (result is Map<String, dynamic> && result.containsKey('order_summary')) { 
-                    final OrderSummary orderSummary = result['order_summary'];
-                    
-                    // 1. Refresh the merchandise list stock
-                    await fetchMerchandise(); 
-                    
-                    // 2. Immediately push the CartPaidPage (OrderSuccessPage)
-                    if (mounted) {
-                        Navigator.push(
-                            context,
-                            MaterialPageRoute(
-                                // Pass the OrderSummary object to the success screen
-                                builder: (context) => CartPaidPage(orderSummary: orderSummary),
-                            ),
-                        );
-                    }
+                if (result is Map<String, dynamic> && result.containsKey('order_summary')) {
+                  final OrderSummary orderSummary = result['order_summary'];
+                  await fetchMerchandise();
+                  if (mounted) {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(builder: (context) => CartPaidPage(orderSummary: orderSummary)),
+                    );
+                  }
                 }
               },
             ),
+          // Profile icon
+          IconButton(
+            icon: const Icon(Icons.person_outline_rounded),
+            tooltip: 'Profil',
+            onPressed: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(builder: (_) => const ProfilePage()),
+              );
+            },
+          ),
         ],
       ),
-      drawer: LeftDrawer(),
+      // FAB for Add Merchandise (organizer only)
+      floatingActionButton: (isLoggedIn && userRole?.toLowerCase() == 'organizer')
+          ? Container(
+              decoration: BoxDecoration(
+                borderRadius: BorderRadius.circular(12),
+                boxShadow: [
+                  BoxShadow(
+                    color: _accentTeal.withOpacity(0.3),
+                    blurRadius: 12,
+                    offset: const Offset(0, 4),
+                  ),
+                ],
+              ),
+              child: FloatingActionButton.extended(
+                backgroundColor: _accentTeal,
+                onPressed: () async {
+                  final result = await Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) => MerchandiseFormPage(merchandise: null, categoryChoices: categoryChoices),
+                    ),
+                  );
+                  if (result == true) {
+                    fetchMerchandise();
+                  }
+                },
+                icon: const Icon(Icons.add_rounded, color: Colors.white),
+                label: const Text(
+                  'Tambah Produk',
+                  style: TextStyle(color: Colors.white, fontWeight: FontWeight.w600),
+                ),
+              ),
+            )
+          : null,
       body: Column(
         children: <Widget>[
-          // Filter and Sort Controls
+          // Filter and Sort Controls - Modern styling
           Padding(
-            padding: const EdgeInsets.all(8.0),
+            padding: const EdgeInsets.all(16.0),
             child: Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
+                // Category Filter
                 Expanded(
-                  child: DropdownButtonFormField<String>(
-                    decoration: const InputDecoration(
-                      labelText: 'Category',
-                      border: OutlineInputBorder(),
-                      contentPadding: EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      borderRadius: BorderRadius.circular(12),
+                      border: Border.all(color: _borderLight),
+                      boxShadow: [
+                        BoxShadow(color: Colors.black.withOpacity(0.04), blurRadius: 8, offset: const Offset(0, 2))
+                      ]
                     ),
-                    value: currentCategory ?? '',
-                    items: categoryChoices.map((CategoryChoice category) {
-                      return DropdownMenuItem<String>(
-                        value: category.value,
-                        child: Text(category.label),
-                      );
-                    }).toList(),
-                    onChanged: _onCategoryChanged,
+                    child: DropdownButtonHideUnderline(
+                      child: DropdownButton<String>(
+                        value: currentCategory ?? '',
+                        isExpanded: true,
+                        icon: Icon(Icons.category_rounded, color: _primaryBlue, size: 18),
+                        dropdownColor: Colors.white,
+                        borderRadius: BorderRadius.circular(12),
+                        style: TextStyle(color: _textDark, fontSize: 13, fontWeight: FontWeight.w600),
+                        items: categoryChoices.map((CategoryChoice category) {
+                          return DropdownMenuItem<String>(
+                            value: category.value,
+                            child: Text(category.label),
+                          );
+                        }).toList(),
+                        onChanged: _onCategoryChanged,
+                      ),
+                    ),
                   ),
                 ),
-                const SizedBox(width: 8),
+                const SizedBox(width: 12),
+                // Sort Filter
                 Expanded(
-                  child: DropdownButtonFormField<String>(
-                    decoration: const InputDecoration(
-                      labelText: 'Sort By',
-                      border: OutlineInputBorder(),
-                      contentPadding: EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      borderRadius: BorderRadius.circular(12),
+                      border: Border.all(color: _borderLight),
+                      boxShadow: [
+                        BoxShadow(color: Colors.black.withOpacity(0.04), blurRadius: 8, offset: const Offset(0, 2))
+                      ]
                     ),
-                    value: currentSort,
-                    items: [
-                      const DropdownMenuItem(value: null, child: Text('Default')),
-                      const DropdownMenuItem(value: 'price_asc', child: Text('Price: Low to High')),
-                      const DropdownMenuItem(value: 'price_desc', child: Text('Price: High to Low')),
-                    ],
-                    onChanged: _onSortChanged,
+                    child: DropdownButtonHideUnderline(
+                      child: DropdownButton<String>(
+                        value: currentSort,
+                        isExpanded: true,
+                        icon: Icon(Icons.sort_rounded, color: _primaryBlue, size: 18),
+                        dropdownColor: Colors.white,
+                        borderRadius: BorderRadius.circular(12),
+                        style: TextStyle(color: _textDark, fontSize: 13, fontWeight: FontWeight.w600),
+                        items: const [
+                          DropdownMenuItem(value: null, child: Text('Default')),
+                          DropdownMenuItem(value: 'price_asc', child: Text('Price: Low to High')),
+                          DropdownMenuItem(value: 'price_desc', child: Text('Price: High to Low')),
+                        ],
+                        onChanged: _onSortChanged,
+                      ),
+                    ),
                   ),
                 ),
               ],
@@ -318,16 +381,16 @@ class _MerchandisePageState extends State<MerchandisePage> {
           // Merchandise Grid
           Expanded(
             child: isLoading
-                ? const Center(child: CircularProgressIndicator())
+                ? Center(child: CircularProgressIndicator(color: _primaryBlue))
                 : merchandises.isEmpty
-                    ? Center(child: Text('No merchandise found for category: ${currentCategory ?? "All"}'))
+                    ? _buildEmptyState()
                     : GridView.builder(
-                        padding: const EdgeInsets.all(16.0),
+                        padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
                         gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
                           crossAxisCount: 2, 
-                          crossAxisSpacing: 16.0,
-                          mainAxisSpacing: 16.0,
-                          childAspectRatio: 0.65, // Adjusted ratio for management buttons
+                          crossAxisSpacing: 12.0,
+                          mainAxisSpacing: 12.0,
+                          childAspectRatio: 0.52,
                         ),
                         itemCount: merchandises.length,
                         itemBuilder: (context, index) {
@@ -337,11 +400,39 @@ class _MerchandisePageState extends State<MerchandisePage> {
                             isLoggedIn: isLoggedIn,
                             userRole: userRole,
                             userName: userName,
-                            onEdit: _editMerchandise, // Pass edit function
-                            onDelete: _deleteMerchandise, // Pass delete function
+                            onEdit: _editMerchandise,
+                            onDelete: _deleteMerchandise,
                           );
                         },
                       ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildEmptyState() {
+    return Center(
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Container(
+            padding: const EdgeInsets.all(20),
+            decoration: BoxDecoration(
+              color: _primaryBlue.withOpacity(0.1),
+              shape: BoxShape.circle,
+            ),
+            child: Icon(Icons.shopping_bag_outlined, size: 48, color: _primaryBlue),
+          ),
+          const SizedBox(height: 16),
+          Text(
+            "Tidak Ada Merchandise",
+            style: TextStyle(fontSize: 18, fontWeight: FontWeight.w700, color: _textDark),
+          ),
+          const SizedBox(height: 8),
+          Text(
+            "Kategori: ${currentCategory ?? 'Semua'}",
+            style: TextStyle(color: _textGrey, fontSize: 13),
           ),
         ],
       ),
@@ -466,39 +557,56 @@ class _MerchandiseCardState extends State<_MerchandiseCard> {
     );
   }
 
+  // Color palette matching ticketing design  
+  static const Color _primaryDark = Color(0xFF113352);
+  static const Color _primaryBlue = Color(0xFF3293EC);
+  static const Color _accentTeal = Color(0xFF0D9488);
+  static const Color _primaryRed = Color(0xFFEA3C43);
+  static const Color _textGrey = Color(0xFF3D3D3D);
+  static const Color _borderLight = Color(0xFFE0E0E0);
 
   @override
   Widget build(BuildContext context) {
     final isStockAvailable = widget.merch.stock > 0;
     final resolvedImageUrl = _getResolvedImageUrl(widget.merch.imageUrl);
 
-    return Card(
-      elevation: 4,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+    return Container(
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: _borderLight, width: 1),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.04),
+            blurRadius: 10,
+            offset: const Offset(0, 2),
+          ),
+        ],
+      ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: <Widget>[
           // Image Container
-          Container(
-            width: double.infinity,
-            height: 300, 
-            clipBehavior: Clip.antiAlias,
-            decoration: const BoxDecoration(
-              borderRadius: BorderRadius.vertical(top: Radius.circular(12)),
+          ClipRRect(
+            borderRadius: const BorderRadius.vertical(top: Radius.circular(11)),
+            child: Container(
+              width: double.infinity,
+              height: 140, 
+              color: Colors.grey[100],
+              child: resolvedImageUrl != null 
+                  ? Image.network(
+                      resolvedImageUrl,
+                      fit: BoxFit.cover,
+                      errorBuilder: (context, error, stackTrace) {
+                         return _imagePlaceholder();
+                      },
+                      loadingBuilder: (context, child, loadingProgress) {
+                        if (loadingProgress == null) return child;
+                        return _imageLoadingIndicator();
+                      },
+                    )
+                  : _imagePlaceholder(),
             ),
-            child: resolvedImageUrl != null 
-                ? Image.network(
-                    resolvedImageUrl,
-                    fit: BoxFit.contain,
-                    errorBuilder: (context, error, stackTrace) {
-                       return _imagePlaceholder();
-                    },
-                    loadingBuilder: (context, child, loadingProgress) {
-                      if (loadingProgress == null) return child;
-                      return _imageLoadingIndicator();
-                    },
-                  )
-                : _imagePlaceholder(),
           ),
           
           // Details

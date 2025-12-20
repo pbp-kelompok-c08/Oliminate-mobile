@@ -137,9 +137,17 @@ class _MerchandiseFormPageState extends State<MerchandiseFormPage> {
     final title = widget.merchandise == null ? 'Create New Merchandise' : 'Edit Merchandise: ${widget.merchandise!.name}';
     
     return Scaffold(
+      backgroundColor: const Color(0xFFF5F5F5),
       appBar: AppBar(
-        title: Text(title),
-        backgroundColor: Colors.blueAccent,
+        title: Text(
+          title,
+          style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 16),
+          overflow: TextOverflow.ellipsis,
+        ),
+        backgroundColor: const Color(0xFF113352),
+        foregroundColor: Colors.white,
+        elevation: 0.5,
+        centerTitle: false,
       ),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(16.0),
@@ -195,17 +203,17 @@ class _MerchandiseFormPageState extends State<MerchandiseFormPage> {
                 onPressed: _isSubmitting ? null : _submitForm,
                 icon: _isSubmitting 
                     ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2))
-                    : const Icon(Icons.save),
+                    : const Icon(Icons.save, color: Colors.white),
                 label: Text(
                   isUpdate 
-                    ? (_isSubmitting ? 'Saving Changes...' : 'Save Changes')
-                    : (_isSubmitting ? 'Creating...' : 'Create Merchandise'),
+                    ? (_isSubmitting ? 'Menyimpan...' : 'Simpan Perubahan')
+                    : (_isSubmitting ? 'Membuat...' : 'Buat Merchandise'),
                   style: const TextStyle(color: Colors.white, fontSize: 16),
                 ),
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: Colors.blue,
+                  backgroundColor: const Color(0xFF0D9488),
                   padding: const EdgeInsets.symmetric(vertical: 14),
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
                 ),
               ),
             ],

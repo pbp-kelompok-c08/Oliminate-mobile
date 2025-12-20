@@ -107,6 +107,21 @@ class _ProfilePageState extends State<ProfilePage> {
     final p = _profile!;
 
     return Scaffold(
+      backgroundColor: const Color(0xFFF5F5F5),
+      appBar: AppBar(
+        title: const Text(
+          'Profil Pengguna',
+          style: TextStyle(fontWeight: FontWeight.w700, fontSize: 18),
+        ),
+        backgroundColor: ProfilePage._navy,
+        foregroundColor: Colors.white,
+        elevation: 0.5,
+        centerTitle: false,
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back_rounded),
+          onPressed: () => Navigator.of(context).pop(),
+        ),
+      ),
       body: SafeArea(
         child: SingleChildScrollView(
           padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 24),
@@ -116,14 +131,6 @@ class _ProfilePageState extends State<ProfilePage> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.center,
                 children: [
-                  Text(
-                    'User Profile',
-                    style: theme.textTheme.titleLarge?.copyWith(
-                      fontWeight: FontWeight.w800,
-                      color: ProfilePage._navy,
-                    ),
-                  ),
-                  const SizedBox(height: 14),
                   Container(
                     width: double.infinity,
                     decoration: BoxDecoration(
@@ -162,11 +169,11 @@ class _ProfilePageState extends State<ProfilePage> {
                               ?.copyWith(color: ProfilePage._muted),
                         ),
                         const SizedBox(height: 22),
-                        _ProfileField(label: 'Username', value: p.username),
+                        _ProfileField(label: 'Nama Pengguna', value: p.username),
                         const SizedBox(height: 16),
-                        _ProfileField(label: 'First Name', value: p.firstName),
+                        _ProfileField(label: 'Nama Depan', value: p.firstName),
                         const SizedBox(height: 16),
-                        _ProfileField(label: 'Last Name', value: p.lastName),
+                        _ProfileField(label: 'Nama Belakang', value: p.lastName),
                         const SizedBox(height: 16),
                         _ProfileField(
                           label: 'Email',
@@ -174,10 +181,10 @@ class _ProfilePageState extends State<ProfilePage> {
                           keyboardType: TextInputType.emailAddress,
                         ),
                         const SizedBox(height: 16),
-                        _ProfileField(label: 'Faculty', value: p.fakultas),
+                        _ProfileField(label: 'Fakultas', value: p.fakultas),
                         const SizedBox(height: 16),
                         const _ProfileField(
-                            label: 'Password', value: '********', obscure: true),
+                            label: 'Kata Sandi', value: '********', obscure: true),
                         const SizedBox(height: 20),
                         SizedBox(
                           width: double.infinity,
@@ -200,7 +207,7 @@ class _ProfilePageState extends State<ProfilePage> {
                                   ProfilePage._baseBlue.withOpacity(0.28),
                             ),
                             child: Text(
-                              'Edit Profile',
+                              'Ubah Profil',
                               style: theme.textTheme.labelLarge?.copyWith(
                                 color: Colors.white,
                                 fontWeight: FontWeight.w700,
@@ -226,7 +233,7 @@ class _ProfilePageState extends State<ProfilePage> {
                         ),
                       ),
                       child: Text(
-                        _loggingOut ? 'Logging out...' : 'Logout',
+                        _loggingOut ? 'Keluar...' : 'Keluar',
                         style: theme.textTheme.labelLarge?.copyWith(
                           color: const Color(0xFFEA3C43),
                           fontWeight: FontWeight.w700,

@@ -116,6 +116,28 @@ class ScheduleCard extends StatelessWidget {
                               ),
                             ],
                           ),
+                          if (schedule.organizer != null) ...[
+                            const SizedBox(height: 8),
+                            Row(
+                              children: [
+                                Icon(
+                                  Icons.person_outline_rounded,
+                                  size: 14,
+                                  color: AppColors.neutral500,
+                                ),
+                                const SizedBox(width: 6),
+                                Expanded(
+                                  child: Text(
+                                    schedule.organizer!,
+                                    style: const TextStyle(
+                                      fontSize: 12,
+                                      color: AppColors.neutral700,
+                                    ),
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ],
                           const SizedBox(height: 12),
                           Container(
                             padding: const EdgeInsets.symmetric(
@@ -153,28 +175,6 @@ class ScheduleCard extends StatelessWidget {
                               ],
                             ),
                           ),
-                          if (schedule.organizer != null) ...[
-                            const SizedBox(height: 10),
-                            Row(
-                              children: [
-                                Icon(
-                                  Icons.person_outline_rounded,
-                                  size: 14,
-                                  color: AppColors.neutral500,
-                                ),
-                                const SizedBox(width: 6),
-                                Expanded(
-                                  child: Text(
-                                    schedule.organizer!,
-                                    style: const TextStyle(
-                                      fontSize: 12,
-                                      color: AppColors.neutral700,
-                                    ),
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ],
                         ],
                       ),
                     ),

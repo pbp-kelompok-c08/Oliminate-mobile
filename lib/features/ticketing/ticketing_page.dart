@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import 'dart:convert';
 import 'package:http/http.dart' as http;
-import 'package:oliminate_mobile/left_drawer.dart';
 import 'package:oliminate_mobile/features/user-profile/auth_repository.dart';
+import 'package:oliminate_mobile/features/user-profile/main_profile.dart';
 
 import 'package:oliminate_mobile/features/ticketing/models.dart';
 import 'package:oliminate_mobile/features/ticketing/ticket_form.dart';
@@ -191,8 +191,20 @@ class _TicketingPageState extends State<TicketingPage> {
         foregroundColor: Colors.white,
         elevation: 0.5,
         centerTitle: false,
+        automaticallyImplyLeading: false,
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.person_outline_rounded),
+            tooltip: 'Profil',
+            onPressed: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(builder: (_) => const ProfilePage()),
+              );
+            },
+          ),
+        ],
       ),
-      drawer: const LeftDrawer(),
       body: isOrganizer ? _buildOrganizerBody() : _buildUserBody(displayTickets),
     );
   }
