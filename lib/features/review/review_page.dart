@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
-import 'package:pbp_django_auth/pbp_django_auth.dart';
-import 'package:provider/provider.dart';
+import 'dart:convert';
 import 'package:oliminate_mobile/core/app_config.dart';
 import 'package:oliminate_mobile/core/theme/app_colors.dart';
-import 'package:oliminate_mobile/features/user-profile/edit_profile.dart'; // Import untuk navigasi profil
+import 'package:oliminate_mobile/features/user-profile/edit_profile.dart';
+import 'package:oliminate_mobile/features/user-profile/auth_repository.dart';
 import 'models.dart';
 import 'review_detail.dart';
 
@@ -16,35 +16,30 @@ class ReviewPage extends StatefulWidget {
 
 class _ReviewPageState extends State<ReviewPage> {
   String _sortOption = '-review_count';
+  final _authRepo = AuthRepository.instance;
 
-  Future<List<EventReview>> fetchEvents(CookieRequest request) async {
-    final String url = '${AppConfig.backendBaseUrl}/review/json/?sort=$_sortOption';
-    final response = await request.get(url);
-    
-    List<EventReview> listEvents = [];
-    for (var d in response) {
-      if (d != null) {
-        listEvents.add(EventReview.fromJson(d));
-      }
+  Future<List<EventReview>> fetchEvents() async {
+    await _authRepo.init();
+    final res = await _authRepo.client.get('/review/json/?sort=$_sortOption');
+    if (res.statusCode == 200) {
+      final data = jsonDecode(res.body) as List;
+      return data.map((d) => EventReview.fromJson(d)).toList();
+    } else {
+      throw Exception('Gagal memuat data');
     }
-    return listEvents;
   }
 
   @override
   Widget build(BuildContext context) {
-    final request = context.watch<CookieRequest>();
-
     return Scaffold(
       backgroundColor: AppColors.neutral50,
       appBar: AppBar(
         title: const Text('Review Pertandingan'),
-        backgroundColor: AppColors.pacilBlueDarker1, //
+        backgroundColor: AppColors.pacilBlueDarker1,
         foregroundColor: Colors.white,
         elevation: 0,
-        // Hapus Left Drawer dengan mengganti leading menjadi null (opsional) atau matikan otomatis
-        automaticallyImplyLeading: false, 
+        automaticallyImplyLeading: false,
         actions: [
-          // IKON ORANG DI SISI KANAN (Sama dengan Scheduling Page)
           IconButton(
             icon: const Icon(Icons.person_outline_rounded),
             tooltip: 'Edit Profile',
@@ -59,7 +54,6 @@ class _ReviewPageState extends State<ReviewPage> {
           ),
         ],
       ),
-      // Drawer dihapus agar tidak muncul ikon garis tiga di kiri
       body: SafeArea(
         child: Padding(
           padding: const EdgeInsets.all(16),
@@ -68,8 +62,8 @@ class _ReviewPageState extends State<ReviewPage> {
               _buildHeaderControls(),
               const SizedBox(height: 12),
               Expanded(
-                child: FutureBuilder(
-                  future: fetchEvents(request),
+                child: FutureBuilder<List<EventReview>>(
+                  future: fetchEvents(),
                   builder: (context, snapshot) {
                     if (snapshot.connectionState == ConnectionState.waiting) {
                       return const Center(child: CircularProgressIndicator(color: AppColors.pacilBlueBase));
