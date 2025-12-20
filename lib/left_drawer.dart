@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:oliminate_mobile/features/main-page/main_page.dart';
+import 'package:oliminate_mobile/features/ticketing/ticketing_page.dart';
+import 'package:oliminate_mobile/features/user-profile/main_profile.dart';
 
 class LeftDrawer extends StatelessWidget {
   const LeftDrawer({super.key});
@@ -56,12 +58,12 @@ class LeftDrawer extends StatelessWidget {
             leading: const Icon(Icons.bookmark),
             title: const Text('Ticketing'),
             onTap: () {
-              // Navigator.pushReplacement(
-              //     context,
-              //     MaterialPageRoute(
-              //       // Assuming you'll have a dedicated NewsListPage later
-              //       builder: (context) => const TicketingPage(), 
-              //     ));
+              Navigator.pushReplacement(
+                  context,
+                  MaterialPageRoute(
+                    // Assuming you'll have a dedicated NewsListPage later
+                    builder: (context) => const TicketingPage(), 
+                  ));
             },
           ),
           ListTile(
