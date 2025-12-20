@@ -208,31 +208,33 @@ class _ProfilePageState extends State<ProfilePage> {
                             ),
                           ),
                         ),
-                        const SizedBox(height: 12),
-                        SizedBox(
-                          width: double.infinity,
-                          child: OutlinedButton(
-                            onPressed: _loggingOut ? null : _logout,
-                            style: OutlinedButton.styleFrom(
-                              padding: const EdgeInsets.symmetric(vertical: 14),
-                              shape: RoundedRectangleBorder(
-                                  borderRadius: BorderRadius.circular(12)),
-                              side: BorderSide(
-                                  color: ProfilePage._baseBlue.withOpacity(0.35)),
-                            ),
-                            child: Text(
-                              _loggingOut ? 'Logging out...' : 'Logout',
-                              style: theme.textTheme.labelLarge?.copyWith(
-                                color: ProfilePage._baseBlue,
-                                fontWeight: FontWeight.w700,
-                              ),
-                            ),
-                          ),
-                        ),
                       ],
                     ),
                   ),
                   const SizedBox(height: 28),
+                  SizedBox(
+                    width: double.infinity,
+                    child: OutlinedButton(
+                      onPressed: _loggingOut ? null : _logout,
+                      style: OutlinedButton.styleFrom(
+                        padding: const EdgeInsets.symmetric(vertical: 14),
+                        shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(12)),
+                        side: const BorderSide(
+                          color: Color(0xFFEA3C43),
+                          width: 2,
+                        ),
+                      ),
+                      child: Text(
+                        _loggingOut ? 'Logging out...' : 'Logout',
+                        style: theme.textTheme.labelLarge?.copyWith(
+                          color: const Color(0xFFEA3C43),
+                          fontWeight: FontWeight.w700,
+                        ),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 16),
                   Text(
                     '© 2025 Oliminate',
                     style: theme.textTheme.bodySmall
