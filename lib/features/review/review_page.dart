@@ -1,11 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:pbp_django_auth/pbp_django_auth.dart';
 import 'package:provider/provider.dart';
-import 'package:oliminate_mobile/core/app_config.dart'; // Pastikan import ini ada
+import 'package:oliminate_mobile/core/app_config.dart';
+import 'package:oliminate_mobile/core/theme/app_colors.dart';
+import 'package:oliminate_mobile/features/user-profile/edit_profile.dart'; // Import untuk navigasi profil
 import 'models.dart';
 import 'review_detail.dart';
-import 'package:oliminate_mobile/core/theme/app_colors.dart';
-import 'package:oliminate_mobile/left_drawer.dart';
 
 class ReviewPage extends StatefulWidget {
   const ReviewPage({super.key});
@@ -15,11 +15,9 @@ class ReviewPage extends StatefulWidget {
 }
 
 class _ReviewPageState extends State<ReviewPage> {
-  // Default sort sesuai HTML: selected value="-review_count"
   String _sortOption = '-review_count';
 
   Future<List<EventReview>> fetchEvents(CookieRequest request) async {
-    // Menggunakan AppConfig agar aman di Localhost/Android
     final String url = '${AppConfig.backendBaseUrl}/review/json/?sort=$_sortOption';
     final response = await request.get(url);
     
@@ -37,316 +35,252 @@ class _ReviewPageState extends State<ReviewPage> {
     final request = context.watch<CookieRequest>();
 
     return Scaffold(
-      backgroundColor: Colors.grey[50], // Background agak abu terang biar card pop-up
+      backgroundColor: AppColors.neutral50,
       appBar: AppBar(
-        title: const Text(
-          'Review Pertandingan',
-          style: TextStyle(fontWeight: FontWeight.bold),
-        ),
-        backgroundColor: const Color(0xFF22629E), // Pacil Blue
+        title: const Text('Review Pertandingan'),
+        backgroundColor: AppColors.pacilBlueDarker1, //
         foregroundColor: Colors.white,
         elevation: 0,
-      ),
-      drawer: LeftDrawer(),
-      body: Column(
-        children: [
-          // === BAGIAN HEADER & SORTING (Mirip div class="flex justify-between") ===
-          Container(
-            padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
-            color: Colors.white, // Header putih
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                const Text(
-                  "Daftar Event",
-                  style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Color(0xFF22629E)),
+        // Hapus Left Drawer dengan mengganti leading menjadi null (opsional) atau matikan otomatis
+        automaticallyImplyLeading: false, 
+        actions: [
+          // IKON ORANG DI SISI KANAN (Sama dengan Scheduling Page)
+          IconButton(
+            icon: const Icon(Icons.person_outline_rounded),
+            tooltip: 'Edit Profile',
+            onPressed: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (_) => const EditProfilePage(),
                 ),
-                // Dropdown Sort
-                Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 0),
-                  decoration: BoxDecoration(
-                    color: Colors.white,
-                    border: Border.all(color: Colors.grey.shade300),
-                    borderRadius: BorderRadius.circular(8), // rounded-lg
-                  ),
-                  child: DropdownButtonHideUnderline(
-                    child: DropdownButton<String>(
-                      value: _sortOption,
-                      icon: const Icon(Icons.sort, size: 20),
-                      style: const TextStyle(color: Colors.black87, fontSize: 13),
-                      items: const [
-                        DropdownMenuItem(value: '-review_count', child: Text("Paling Populer")),
-                        DropdownMenuItem(value: 'highest_rating', child: Text("Rating Tertinggi")),
-                        DropdownMenuItem(value: 'lowest_rating', child: Text("Rating Terendah")),
-                      ],
-                      onChanged: (String? newValue) {
-                        setState(() {
-                          _sortOption = newValue!;
-                        });
-                      },
-                    ),
-                  ),
-                ),
-              ],
-            ),
+              );
+            },
           ),
+        ],
+      ),
+      // Drawer dihapus agar tidak muncul ikon garis tiga di kiri
+      body: SafeArea(
+        child: Padding(
+          padding: const EdgeInsets.all(16),
+          child: Column(
+            children: <Widget>[
+              _buildHeaderControls(),
+              const SizedBox(height: 12),
+              Expanded(
+                child: FutureBuilder(
+                  future: fetchEvents(request),
+                  builder: (context, snapshot) {
+                    if (snapshot.connectionState == ConnectionState.waiting) {
+                      return const Center(child: CircularProgressIndicator(color: AppColors.pacilBlueBase));
+                    } else if (snapshot.hasError) {
+                      return Center(child: Text("Error: ${snapshot.error}", style: const TextStyle(color: AppColors.pacilRedBase)));
+                    } else if (!snapshot.hasData || snapshot.data!.isEmpty) {
+                      return _buildEmptyState();
+                    }
 
-          // === BAGIAN LIST CARD (Mirip div class="grid") ===
-          Expanded(
-            child: FutureBuilder(
-              future: fetchEvents(request),
-              builder: (context, snapshot) {
-                if (snapshot.connectionState == ConnectionState.waiting) {
-                  return const Center(child: CircularProgressIndicator());
-                } else if (snapshot.hasError) {
-                  return Center(child: Text("Error: ${snapshot.error}"));
-                } else if (!snapshot.hasData || snapshot.data!.isEmpty) {
-                  return const Center(
-                    child: Column(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        Icon(Icons.event_busy, size: 60, color: Colors.grey),
-                        SizedBox(height: 10),
-                        Text("Belum ada pertandingan yang tersedia", style: TextStyle(color: Colors.grey)),
-                      ],
-                    ),
-                  );
-                }
-
-                
-                return LayoutBuilder(
-                  builder: (context, constraints) {
-                    // Logic Grid: Jika lebar > 600 (Tablet/Web) pake 3 kolom, HP pake 2 kolom
-                    int crossAxisCount = constraints.maxWidth > 600 ? 3 : 2;
-                    double aspectRatio = crossAxisCount == 2 ? 0.80 : 0.85;
-
-                    return GridView.builder(
-                      padding: const EdgeInsets.all(16),
-                      gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-                        crossAxisCount: crossAxisCount, 
-                        crossAxisSpacing: 16, // Jarak antar kolom
-                        mainAxisSpacing: 16,  // Jarak antar baris
-                        childAspectRatio: aspectRatio,
+                    return RefreshIndicator(
+                      onRefresh: () async => setState(() {}),
+                      child: ListView.builder(
+                        itemCount: snapshot.data!.length,
+                        itemBuilder: (_, index) {
+                          final event = snapshot.data![index];
+                          return _buildEventCard(event);
+                        },
                       ),
-                      itemCount: snapshot.data!.length,
-                      itemBuilder: (_, index) {
-                        final event = snapshot.data![index];
-                        return _buildEventCard(event);
-                      },
                     );
                   },
-                );
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  // --- HEADER & DROPDOWN ---
+  Widget _buildHeaderControls() {
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      children: [
+        Text(
+          "Daftar Event",
+          style: TextStyle(fontSize: 20, fontWeight: FontWeight.w700, color: AppColors.neutral900),
+        ),
+        Container(
+          padding: const EdgeInsets.symmetric(horizontal: 12),
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(20),
+            boxShadow: [
+              BoxShadow(color: Colors.black.withOpacity(0.08), blurRadius: 8, offset: const Offset(0, 2)),
+            ],
+          ),
+          child: DropdownButtonHideUnderline(
+            child: DropdownButton<String>(
+              value: _sortOption,
+              icon: const Icon(Icons.sort_rounded, color: AppColors.pacilBlueDarker1),
+              style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600, color: AppColors.neutral700),
+              items: const [
+                DropdownMenuItem(value: '-review_count', child: Text("Populer")),
+                DropdownMenuItem(value: 'highest_rating', child: Text("Rating ↑")),
+                DropdownMenuItem(value: 'lowest_rating', child: Text("Rating ↓")),
+              ],
+              onChanged: (v) {
+                if (v != null) setState(() => _sortOption = v);
               },
             ),
           ),
+        ),
+      ],
+    );
+  }
+
+  // --- EMPTY STATE ---
+  Widget _buildEmptyState() {
+    return Center(
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Container(
+            padding: const EdgeInsets.all(24),
+            decoration: BoxDecoration(
+              color: Colors.white,
+              shape: BoxShape.circle,
+              boxShadow: [
+                BoxShadow(color: AppColors.pacilBlueDarker1.withOpacity(0.1), blurRadius: 20, offset: const Offset(0, 8)),
+              ],
+            ),
+            child: Icon(
+              Icons.event_busy_outlined,
+              size: 64,
+              color: AppColors.pacilBlueDarker1.withOpacity(0.5),
+            ),
+          ),
+          const SizedBox(height: 24),
+          Text(
+            'Belum ada pertandingan',
+            style: TextStyle(fontSize: 20, fontWeight: FontWeight.w600, color: AppColors.neutral900),
+          ),
+          const SizedBox(height: 8),
+          Text(
+            'Cek lagi nanti untuk memberikan review Anda.',
+            style: TextStyle(fontSize: 14, color: AppColors.neutral500),
+            textAlign: TextAlign.center,
+          ),
         ],
       ),
     );
   }
 
-  // === WIDGET CARD DESIGN (Translasi dari class="card schedule-card") ===
+  // --- EVENT CARD ---
   Widget _buildEventCard(EventReview event) {
     return Container(
-      margin: const EdgeInsets.only(bottom: 20),
+      margin: const EdgeInsets.symmetric(vertical: 8),
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(12), // border-radius: 12px
+        borderRadius: BorderRadius.circular(24),
         boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.08), // shadow halus
-            blurRadius: 10,
-            offset: const Offset(0, 4),
-          ),
+          BoxShadow(color: Colors.black.withOpacity(0.06), blurRadius: 16, offset: const Offset(0, 4)),
         ],
       ),
-      child: InkWell(
-        onTap: () {
-           Navigator.push(
-              context,
-              MaterialPageRoute(
-                builder: (context) => ReviewDetailPage(scheduleId: event.id),
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(24),
+        child: InkWell(
+          onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => ReviewDetailPage(scheduleId: event.id))),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              SizedBox(
+                height: 180,
+                child: event.imageUrl != null && event.imageUrl!.isNotEmpty
+                    ? Image.network(event.imageUrl!, fit: BoxFit.cover)
+                    : _placeholder(),
               ),
-           );
-        },
-        borderRadius: BorderRadius.circular(12),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            // 1. GAMBAR (Mirip tag <img>)
-            ClipRRect(
-              borderRadius: const BorderRadius.vertical(top: Radius.circular(12)),
-              child: event.imageUrl != null && event.imageUrl!.isNotEmpty
-                  ? Image.network(
-                      event.imageUrl!,
-                      height: 180, // height: 200px (disesuaikan dikit biar proporsional di HP)
-                      width: double.infinity,
-                      fit: BoxFit.cover,
-                      errorBuilder: (context, error, stackTrace) => _buildNoImage(),
-                    )
-                  : _buildNoImage(),
-            ),
-
-            // 2. KONTEN (Mirip div style="padding:16px")
-            Padding(
-              padding: const EdgeInsets.all(16.0),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  // Judul Team
-                  Text(
-                    "${event.team1} vs ${event.team2}",
-                    style: const TextStyle(
-                      fontSize: 18, 
-                      fontWeight: FontWeight.bold,
-                      color: AppColors.neutral900, // Text Gray Dark
+              Padding(
+                padding: const EdgeInsets.all(20),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      "${event.team1} vs ${event.team2}",
+                      style: TextStyle(fontSize: 20, fontWeight: FontWeight.w700, color: AppColors.neutral900),
                     ),
-                  ),
-                  
-                  const SizedBox(height: 8),
-
-                  // Rating Section (Bintang & Angka)
-                  Row(
-                    children: [
-                      // Render Bintang
-                      ..._buildStarIcons(event.avgRating),
-                      const SizedBox(width: 8),
-                      // Text Rating
-                      Text(
-                        "${event.avgRating.toStringAsFixed(1)} ",
-                        style: const TextStyle(fontWeight: FontWeight.bold, color: Colors.black87),
-                      ),
-                      Text(
-                        "(${event.reviewCount} review)",
-                        style: TextStyle(color: Colors.grey[600], fontSize: 12),
-                      ),
-                    ],
-                  ),
-
-                  const SizedBox(height: 8),
-
-                  // Metadata (Category & Location)
-                  Row(
-                    children: [
-                      Icon(Icons.category, size: 14, color: Colors.grey[500]),
-                      const SizedBox(width: 4),
-                      Text(
-                        event.category,
-                        style: TextStyle(color: Colors.grey[600], fontSize: 13),
-                      ),
-                      const SizedBox(width: 10),
-                      Icon(Icons.location_on, size: 14, color: Colors.grey[500]),
-                      const SizedBox(width: 4),
-                      Expanded(
-                        child: Text(
-                          event.location,
-                          overflow: TextOverflow.ellipsis,
-                          style: TextStyle(color: Colors.grey[600], fontSize: 13),
-                        ),
-                      ),
-                    ],
-                  ),
-
-                  const SizedBox(height: 12),
-
-                  // Tanggal & Waktu
-                  Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-                    decoration: BoxDecoration(
-                      color: AppColors.pacilBlueLight3, // Light Blue Background
-                      borderRadius: BorderRadius.circular(6),
-                    ),
-                    child: Row(
-                      mainAxisSize: MainAxisSize.min,
+                    const SizedBox(height: 8),
+                    Row(
                       children: [
-                        const Icon(Icons.access_time_filled, size: 16, color: Color(0xFF0284C7)),
-                        const SizedBox(width: 6),
-                        Text(
-                          "${event.date} | ${event.time.substring(0, 5)}",
-                          style: const TextStyle(
-                            color: AppColors.pacilBlueBase,
-                            fontWeight: FontWeight.w700,
-                            fontSize: 12,
-                          ),
-                        ),
+                        ..._buildStarIcons(event.avgRating),
+                        const SizedBox(width: 8),
+                        Text(event.avgRating.toStringAsFixed(1), style: const TextStyle(fontWeight: FontWeight.bold)),
+                        Text(" (${event.reviewCount})", style: TextStyle(color: AppColors.neutral500, fontSize: 12)),
                       ],
                     ),
-                  ),
-                ],
-              ),
-            ),
-
-            // 3. TOMBOL (Mirip a class="btn btn-outline")
-            // Tombol Detail
-            Padding(
-              padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
-              child: SizedBox(
-                width: double.infinity, // Bikin full width
-                child: OutlinedButton(
-                  onPressed: () {
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                        builder: (context) => ReviewDetailPage(scheduleId: event.id),
-                      ),
-                    );
-                  },
-                  style: OutlinedButton.styleFrom(
-                    padding: const EdgeInsets.symmetric(vertical: 10),
-                    side: const BorderSide(
-                      color: AppColors.pacilBlueBase,
-                      width: 2,
+                    const SizedBox(height: 12),
+                    _iconInfo(Icons.category_outlined, event.category),
+                    const SizedBox(height: 4),
+                    _iconInfo(Icons.location_on_outlined, event.location),
+                    const SizedBox(height: 16),
+                    Align(
+                      alignment: Alignment.centerRight,
+                      child: _actionButton(event),
                     ),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(18),
-                    ),
-                  ),
-                  child: const Text(
-                    'Lihat Review',
-                    style: TextStyle(
-                      color: AppColors.pacilBlueBase,
-                      fontWeight: FontWeight.w600,
-                      fontSize: 13,
-                    ),
-                  ),
+                  ],
                 ),
               ),
-            ),
-          ],
+            ],
+          ),
         ),
       ),
     );
   }
 
-  // Helper untuk Placeholder No Image
-  Widget _buildNoImage() {
+  Widget _iconInfo(IconData icon, String text) {
+    return Row(
+      children: [
+        Icon(icon, size: 14, color: AppColors.neutral500),
+        const SizedBox(width: 6),
+        Text(text, style: TextStyle(fontSize: 13, color: AppColors.neutral700)),
+      ],
+    );
+  }
+
+  Widget _actionButton(EventReview event) {
     return Container(
-      height: 180,
-      width: double.infinity,
-      color: AppColors.neutral100,
-      child: const Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Icon(Icons.image_not_supported, color: Colors.grey, size: 40),
-          SizedBox(height: 5),
-          Text("No Image", style: TextStyle(color: Colors.grey)),
-        ],
+      decoration: BoxDecoration(
+        gradient: const LinearGradient(colors: [AppColors.pacilBlueDarker1, AppColors.pacilBlueBase]),
+        borderRadius: BorderRadius.circular(16),
+      ),
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => ReviewDetailPage(scheduleId: event.id))),
+          borderRadius: BorderRadius.circular(16),
+          child: const Padding(
+            padding: EdgeInsets.symmetric(horizontal: 20, vertical: 10),
+            child: Text('Lihat Review', style: TextStyle(color: Colors.white, fontWeight: FontWeight.w600)),
+          ),
+        ),
       ),
     );
   }
 
-  // Helper untuk Membuat Ikon Bintang (Full, Half, Empty)
+  Widget _placeholder() {
+    return Container(
+      color: AppColors.neutral100,
+      child: Icon(Icons.image_outlined, size: 48, color: AppColors.neutral500),
+    );
+  }
+
   List<Widget> _buildStarIcons(double rating) {
     List<Widget> stars = [];
-    int fullStars = rating.floor();
-    bool hasHalfStar = (rating - fullStars) >= 0.5;
-    
-    for (int i = 0; i < 5; i++) {
-      if (i < fullStars) {
+    for (int i = 1; i <= 5; i++) {
+      if (i <= rating.floor()) {
         stars.add(const Icon(Icons.star, color: Colors.amber, size: 18));
-      } else if (i == fullStars && hasHalfStar) {
+      } else if (i == rating.floor() + 1 && (rating - rating.floor()) >= 0.5) {
         stars.add(const Icon(Icons.star_half, color: Colors.amber, size: 18));
       } else {
-        stars.add(Icon(Icons.star_border, color: Colors.grey[400], size: 18));
+        stars.add(Icon(Icons.star_border, color: AppColors.neutral300, size: 18));
       }
     }
     return stars;

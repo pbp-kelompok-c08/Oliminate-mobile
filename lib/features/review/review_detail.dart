@@ -41,27 +41,41 @@ class _ReviewDetailPageState extends State<ReviewDetailPage> {
     }
   }
 
-  // --- 1. CUSTOM SNACKBAR HELPER ---
-  void showCustomSnackBar(BuildContext context, String message, {bool isError = false}) {
+  // --- 1. CUSTOM SNACKBAR PREMIUM ---
+  void showCustomSnackBar(BuildContext context, String message, {
+    required bool isSuccess, 
+    IconData? customIcon,
+    String? customTitle, // Opsional: Judul Headline Custom
+  }) {
+    final IconData finalIcon = customIcon ?? (isSuccess ? Icons.check_circle_rounded : Icons.error_rounded);
+    final Color finalColor = isSuccess ? const Color(0xFF2E7D32) : AppColors.pacilRedBase; 
+    final String title = customTitle ?? (isSuccess ? "Berhasil" : "Gagal");
+
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         content: Row(
           children: [
-            Icon(
-              isError ? Icons.error_outline : Icons.confirmation_number_outlined, // Icon Tiket/Check
-              color: Colors.white, 
-              size: 28,
+            // Container Icon Bubble
+            Container(
+              padding: const EdgeInsets.all(8),
+              decoration: BoxDecoration(
+                color: Colors.white.withOpacity(0.2),
+                shape: BoxShape.circle,
+              ),
+              child: Icon(finalIcon, color: Colors.white, size: 24),
             ),
-            const SizedBox(width: 12),
+            const SizedBox(width: 16),
+            // Column Text
             Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 mainAxisSize: MainAxisSize.min,
                 children: [
                   Text(
-                    isError ? "Perhatian" : "Berhasil",
+                    title,
                     style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16, color: Colors.white),
                   ),
+                  const SizedBox(height: 4),
                   Text(
                     message,
                     style: const TextStyle(fontSize: 14, color: Colors.white),
@@ -72,81 +86,94 @@ class _ReviewDetailPageState extends State<ReviewDetailPage> {
             ),
           ],
         ),
-        backgroundColor: isError 
-            ? AppColors.pacilRedBase // Merah untuk Error
-            : const Color(0xFFE53935), // Merah "Mahal" (Red 600) untuk sukses sesuai request
+        backgroundColor: finalColor,
         behavior: SnackBarBehavior.floating,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-        margin: const EdgeInsets.all(16),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        margin: const EdgeInsets.all(20),
         elevation: 6,
-        duration: const Duration(seconds: 3),
+        duration: const Duration(seconds: 4),
       ),
     );
   }
 
-  // --- 2. CUSTOM DELETE DIALOG ---
+  // --- 2. DELETE DIALOG YANG KONSISTEN & RESPONSIVE ---
   Future<bool> showCreativeDeleteDialog(BuildContext context) async {
     return await showDialog(
       context: context,
       builder: (BuildContext context) {
         return Dialog(
           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-          elevation: 0,
-          backgroundColor: Colors.transparent,
-          child: Stack(
-            alignment: Alignment.center,
-            children: [
-              Container(
-                margin: const EdgeInsets.only(top: 20),
-                padding: const EdgeInsets.fromLTRB(20, 50, 20, 20),
-                decoration: BoxDecoration(
-                  color: Colors.white,
-                  borderRadius: BorderRadius.circular(20),
-                  boxShadow: const [BoxShadow(color: Colors.black26, blurRadius: 10, offset: Offset(0, 10))],
-                ),
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    const Text(
-                      "Hapus Review?",
-                      style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold, color: AppColors.neutral900),
+          backgroundColor: Colors.white,
+          insetPadding: const EdgeInsets.all(20),
+          child: ConstrainedBox(
+            // --- FIXED MAX WIDTH (Agar Konsisten dengan Form Dialog) ---
+            constraints: const BoxConstraints(maxWidth: 400),
+            child: Padding(
+              padding: const EdgeInsets.fromLTRB(24, 30, 24, 24),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  // Icon Besar di Tengah
+                  Container(
+                    padding: const EdgeInsets.all(16),
+                    decoration: BoxDecoration(
+                      color: AppColors.pacilRedBase.withOpacity(0.1),
+                      shape: BoxShape.circle,
                     ),
-                    const SizedBox(height: 12),
-                    const Text(
-                      "Yakin ingin menghapus review ini? Tindakan ini tidak bisa dibatalkan.",
-                      textAlign: TextAlign.center,
-                      style: TextStyle(fontSize: 14, color: AppColors.neutral500),
-                    ),
-                    const SizedBox(height: 24),
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                      children: [
-                        TextButton(
+                    child: const Icon(Icons.delete_forever_rounded, color: AppColors.pacilRedBase, size: 40),
+                  ),
+                  const SizedBox(height: 20),
+                  
+                  const Text(
+                    "Hapus Review?",
+                    style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold, color: AppColors.neutral900),
+                  ),
+                  const SizedBox(height: 10),
+                  const Text(
+                    "Tindakan ini tidak bisa dibatalkan. Review Anda akan hilang selamanya.",
+                    textAlign: TextAlign.center,
+                    style: TextStyle(fontSize: 14, color: AppColors.neutral500),
+                  ),
+                  
+                  const SizedBox(height: 30),
+
+                  // Tombol Sejajar (Konsisten dengan ReviewFormDialog)
+                  Row(
+                    children: [
+                      Expanded(
+                        child: OutlinedButton(
                           onPressed: () => Navigator.pop(context, false),
-                          child: const Text("Batal", style: TextStyle(color: AppColors.neutral500)),
+                          style: OutlinedButton.styleFrom(
+                            padding: const EdgeInsets.symmetric(vertical: 14),
+                            side: const BorderSide(color: AppColors.neutral300),
+                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                            foregroundColor: AppColors.neutral700,
+                          ),
+                          child: const Text("Batal", style: TextStyle(fontWeight: FontWeight.w600)),
                         ),
-                        ElevatedButton(
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: ElevatedButton(
                           onPressed: () => Navigator.pop(context, true),
                           style: ElevatedButton.styleFrom(
-                            backgroundColor: AppColors.pacilRedBase,
+                            backgroundColor: AppColors.pacilRedBase, // Merah karena Delete
+                            padding: const EdgeInsets.symmetric(vertical: 14),
                             shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                            elevation: 2,
+                            shadowColor: AppColors.pacilRedBase.withOpacity(0.4),
                           ),
-                          child: const Text("Hapus", style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+                          child: const Text(
+                            "Hapus", 
+                            style: TextStyle(fontWeight: FontWeight.bold, color: Colors.white)
+                          ),
                         ),
-                      ],
-                    )
-                  ],
-                ),
+                      ),
+                    ],
+                  )
+                ],
               ),
-              Positioned(
-                top: 0,
-                child: CircleAvatar(
-                  backgroundColor: AppColors.pacilRedBase.withOpacity(0.1),
-                  radius: 35,
-                  child: const Icon(Icons.delete_forever_rounded, color: AppColors.pacilRedBase, size: 35),
-                ),
-              ),
-            ],
+            ),
           ),
         );
       },
@@ -168,7 +195,6 @@ class _ReviewDetailPageState extends State<ReviewDetailPage> {
   }
 
   Future<void> deleteReview(int reviewId) async {
-    // PANGGIL DIALOG BARU DISINI
     bool confirm = await showCreativeDeleteDialog(context);
 
     if (confirm) {
@@ -182,10 +208,15 @@ class _ReviewDetailPageState extends State<ReviewDetailPage> {
         if (data['status'] == 'success') {
           setState(() {}); 
           if (mounted) {
-            // PANGGIL SNACKBAR BARU DISINI
-            showCustomSnackBar(context, "Review berhasil dihapus");
+            showCustomSnackBar(
+              context, 
+              "Review Anda berhasil dihapus dari daftar.", 
+              isSuccess: true
+            );
           }
         }
+      } else {
+        if(mounted) showCustomSnackBar(context, "Gagal menghapus review.", isSuccess: false);
       }
     }
   }
@@ -295,14 +326,20 @@ class _ReviewDetailPageState extends State<ReviewDetailPage> {
                                 const Text("Rating Rata-Rata", style: TextStyle(fontSize: 12, color: AppColors.neutral500)),
                                 const SizedBox(height: 4),
                                 Row(
-                                  crossAxisAlignment: CrossAxisAlignment.end,
+                                  crossAxisAlignment: CrossAxisAlignment.center,
+                                  mainAxisAlignment: MainAxisAlignment.center,
                                   children: [
                                     Text(
                                       averageRating.toStringAsFixed(1),
-                                      style: const TextStyle(fontSize: 32, fontWeight: FontWeight.bold, color: AppColors.neutral900),
+                                      style: const TextStyle(
+                                        fontSize: 32, 
+                                        fontWeight: FontWeight.bold, 
+                                        color: AppColors.neutral900,
+                                        height: 1.0, 
+                                      ),
                                     ),
                                     const SizedBox(width: 8),
-                                    Row(children: _buildStarIcons(averageRating, size: 20))
+                                    Row(children: _buildStarIcons(averageRating, size: 24))
                                   ],
                                 ),
                               ],
@@ -319,20 +356,31 @@ class _ReviewDetailPageState extends State<ReviewDetailPage> {
                         child: ElevatedButton.icon(
                           onPressed: () async {
                             if (!_client.isAuthenticated) {
-                              showCustomSnackBar(context, "Silakan login terlebih dahulu.", isError: true);
+                              showCustomSnackBar(context, "Silakan login terlebih dahulu untuk mengakses fitur ini.", isSuccess: false, customTitle: "Akses Ditolak");
                               return;
                             }
 
                             if (hasReviewed) {
-                              // USER MINTA WARNA MERAH UNTUK WARNING INI
-                              showCustomSnackBar(context, "Kamu sudah menambahkan review!", isError: false);
+                              showCustomSnackBar(
+                                context, 
+                                "Kamu sudah memberikan ulasan untuk pertandingan ini.", 
+                                isSuccess: false, 
+                                customTitle: "Sudah Direview",
+                                customIcon: Icons.confirmation_number_outlined 
+                              );
                               return; 
                             }
 
                             if (canReview) {
                               _showReviewForm(context); 
                             } else {
-                              showCustomSnackBar(context, "Anda harus membeli tiket untuk review!", isError: true);
+                              showCustomSnackBar(
+                                context, 
+                                "Anda harus membeli tiket pertandingan ini untuk memberikan review!", 
+                                isSuccess: false, 
+                                customTitle: "Tiket Diperlukan",
+                                customIcon: Icons.confirmation_number_outlined 
+                              );
                             }
                           },
                           icon: const Icon(Icons.add, size: 18),
@@ -424,16 +472,16 @@ class _ReviewDetailPageState extends State<ReviewDetailPage> {
                   ),
                 ),
               const SizedBox(width: 12),
-              
+
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    // --- 3. LABEL DIEDIT (Sign Diedit) ---
                     Row(
                       children: [
                         Flexible(
                           child: RichText(
+                            overflow: TextOverflow.ellipsis,
                             text: TextSpan(
                               style: const TextStyle(fontSize: 13, color: AppColors.neutral500),
                               children: [
@@ -446,25 +494,35 @@ class _ReviewDetailPageState extends State<ReviewDetailPage> {
                             ),
                           ),
                         ),
-                        // Logika sederhana: Jika mau nampilin label, ganti true/logic kamu
-                        if (true) ...[ 
+                        
+                        if (review.isEdited) ...[ 
                           const SizedBox(width: 8),
                           Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
                             decoration: BoxDecoration(
-                              color: Colors.grey[100],
-                              borderRadius: BorderRadius.circular(4),
-                              border: Border.all(color: Colors.grey[300]!),
+                              color: Colors.grey.shade100,
+                              borderRadius: BorderRadius.circular(12),
+                              border: Border.all(color: Colors.grey.shade300),
                             ),
-                            child: const Text(
-                              "Diedit",
-                              style: TextStyle(fontSize: 10, color: Colors.grey, fontWeight: FontWeight.w500),
+                            child: Row(
+                              children: [
+                                Icon(Icons.edit, size: 10, color: Colors.grey.shade600),
+                                const SizedBox(width: 4),
+                                Text(
+                                  "Diedit",
+                                  style: TextStyle(
+                                    fontSize: 10, 
+                                    color: Colors.grey.shade600, 
+                                    fontWeight: FontWeight.w500
+                                  ),
+                                ),
+                              ],
                             ),
                           ),
                         ]
                       ],
                     ),
-                    const SizedBox(height: 2),
+                    const SizedBox(height: 4),
                     Row(
                       children: [
                         ..._buildStarIcons(review.rating.toDouble(), size: 14),
@@ -477,7 +535,7 @@ class _ReviewDetailPageState extends State<ReviewDetailPage> {
               ),
             ],
           ),
-          
+
           const SizedBox(height: 12),
           Text(review.comment, style: const TextStyle(fontSize: 14, height: 1.5, color: AppColors.neutral900)),
 

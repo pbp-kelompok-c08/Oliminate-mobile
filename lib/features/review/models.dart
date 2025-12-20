@@ -49,6 +49,9 @@ class UserReview {
   final String createdAt;
   final bool isOwner;
   final String? profilePicture;
+  
+  // 1. Tambahkan variabel ini
+  final bool isEdited; 
 
   UserReview({
     required this.id,
@@ -58,17 +61,19 @@ class UserReview {
     required this.createdAt,
     required this.isOwner,
     this.profilePicture,
+    required this.isEdited, 
   });
 
   factory UserReview.fromJson(Map<String, dynamic> json) {
     return UserReview(
-      id: json['id'],
-      reviewer: json['reviewer'],
-      rating: json['rating'],
+      id: json['id'], // sesuaikan dengan key JSON kamu
+      reviewer: json['reviewer'] ?? "Anonymous", // contoh handling null
+      rating: json['rating'] ?? 0,
       comment: json['comment'] ?? "",
-      createdAt: json['created_at'],
-      isOwner: json['is_owner'],
+      createdAt: json['created_at'] ?? "", // atau json['date_posted'] tergantung backend
+      isOwner: json['is_owner'] ?? false, 
       profilePicture: json['profile_picture'],
+      isEdited: json['is_edited'] ?? false, 
     );
   }
 }
