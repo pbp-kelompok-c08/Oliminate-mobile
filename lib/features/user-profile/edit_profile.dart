@@ -5,6 +5,7 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:oliminate_mobile/core/app_config.dart';
 import 'package:oliminate_mobile/features/user-profile/auth_repository.dart';
+import 'package:oliminate_mobile/features/user-profile/login.dart';
 
 class EditProfilePage extends StatefulWidget {
   const EditProfilePage({super.key});
@@ -31,6 +32,7 @@ class _EditProfilePageState extends State<EditProfilePage> {
 
   bool _isLoading = true;
   bool _isSaving = false;
+  bool _loggingOut = false;
   String? _error;
   String? _profilePicturePath;
   String? _profileImageUrl;
@@ -177,6 +179,23 @@ class _EditProfilePageState extends State<EditProfilePage> {
         SnackBar(content: Text(res.message ?? 'Gagal menyimpan perubahan')),
       );
     }
+  }
+
+  Future<void> _logout() async {
+    setState(() {
+      _loggingOut = true;
+    });
+    await _authRepo.logout();
+    if (!mounted) return;
+    setState(() {
+      _loggingOut = false;
+    });
+    Navigator.of(context).pushAndRemoveUntil(
+      MaterialPageRoute(
+        builder: (_) => const LoginPage(),
+      ),
+      (route) => false,
+    );
   }
 
   @override
@@ -372,6 +391,29 @@ class _EditProfilePageState extends State<EditProfilePage> {
                           ],
                         ),
                       ],
+                    ),
+                  ),
+                  const SizedBox(height: 28),
+                  SizedBox(
+                    width: double.infinity,
+                    child: OutlinedButton(
+                      onPressed: _loggingOut ? null : _logout,
+                      style: OutlinedButton.styleFrom(
+                        padding: const EdgeInsets.symmetric(vertical: 14),
+                        shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(12)),
+                        side: const BorderSide(
+                          color: Color(0xFFEA3C43),
+                          width: 2,
+                        ),
+                      ),
+                      child: Text(
+                        _loggingOut ? 'Logging out...' : 'Logout',
+                        style: theme.textTheme.labelLarge?.copyWith(
+                          color: const Color(0xFFEA3C43),
+                          fontWeight: FontWeight.w700,
+                        ),
+                      ),
                     ),
                   ),
                 ],
