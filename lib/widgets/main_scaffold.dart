@@ -3,7 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:oliminate_mobile/core/app_config.dart';
 import 'package:oliminate_mobile/core/theme/app_colors.dart';
 import 'package:oliminate_mobile/features/main-page/main_page.dart';
-import 'package:oliminate_mobile/features/merchandise/merchandise_page.dart';
+import 'package:oliminate_mobile/features/merchandise/screens/merchandise_page.dart';
 import 'package:oliminate_mobile/features/review/review_page.dart';
 import 'package:oliminate_mobile/features/scheduling/presentation/pages/scheduling_page.dart';
 import 'package:oliminate_mobile/features/ticketing/ticketing_page.dart';
