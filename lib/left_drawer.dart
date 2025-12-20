@@ -27,12 +27,19 @@ class LeftDrawer extends StatelessWidget {
           ListTile(
             leading: const Icon(Icons.account_box),
             title: const Text('Profile'),
+            // Bagian redirection ke NewsFormPage
             onTap: () {
+              /*
+              Buatlah routing ke NewsFormPage di sini,
+              setelah halaman NewsFormPage sudah dibuat.
+              */
+              /*
               Navigator.pushReplacement(
                   context,
                   MaterialPageRoute(
                     builder: (context) => const ProfilePage(),
                   ));
+              */
             },
           ),
           ListTile(
