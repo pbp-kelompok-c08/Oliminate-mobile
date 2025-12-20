@@ -62,9 +62,29 @@ class _MainScaffoldState extends State<MainScaffold> {
       ];
 
   void _onTabTapped(int index) {
-    // Navbar indices: 0=Schedule, 1=Ticketing, 2=Merchandise, 3=Review
-    // Map to page indices: Schedule=1, Ticketing=2, Merchandise=3, Review=4
-    final pageIndex = index + 1;
+    // Navbar indices mapping (bottom bar):
+    // 0 => Schedule, 1 => Ticketing, 2 => Merchandise, 3 => Review
+    // Map these to `_pages` indexes in the IndexedStack:
+    // Schedule -> 1, Ticketing -> 2, Merchandise -> 3, Review -> 4
+    int pageIndex;
+    switch (index) {
+      case 0:
+        pageIndex = 1;
+        break;
+      case 1:
+        pageIndex = 2;
+        break;
+      case 2:
+        pageIndex = 3;
+        break;
+      case 3:
+        pageIndex = 4;
+        break;
+      default:
+        pageIndex = 0;
+    }
+
+    if (!mounted) return;
     setState(() {
       _currentIndex = pageIndex;
     });

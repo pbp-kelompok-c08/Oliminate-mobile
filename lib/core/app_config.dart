@@ -12,9 +12,6 @@ class AppConfig {
     }
 
     if (kIsWeb) {
-      // Gunakan localhost supaya dianggap satu "site" dengan
-      // dev server Flutter web (mis. http://localhost:5173),
-      // sehingga cookie CSRF dari Django terkirim dengan benar.
       return 'https://adjie-m-oliminate.pbp.cs.ui.ac.id';
     }
 
