@@ -96,15 +96,23 @@ class _TicketFormPageState extends State<TicketFormPage> with TickerProviderStat
 
       if (response.statusCode == 200 && data['status'] == 'success') {
          if (mounted) {
-          Navigator.pushReplacement(
-            context, 
-            MaterialPageRoute(
-              builder: (context) => TicketPaymentPage(
-                ticketId: data['ticket_id'],
-                baseUrl: widget.baseUrl,
-              )
-            )
-          );
+           // Simpan referensi sebelum pop
+           final navigator = Navigator.of(context);
+           final ticketId = data['ticket_id'];
+           final baseUrl = widget.baseUrl;
+           
+           // Pop dulu agar .then() di ticketing_page terpanggil dan data ter-refresh
+           navigator.pop(true);
+           
+           // Push ke halaman payment
+           navigator.push(
+             MaterialPageRoute(
+               builder: (context) => TicketPaymentPage(
+                 ticketId: ticketId,
+                 baseUrl: baseUrl,
+               )
+             )
+           );
         }
       } else {
          if (mounted) {

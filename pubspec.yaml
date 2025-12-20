@@ -40,6 +40,8 @@ dependencies:
   html: ^0.15.4
   shared_preferences: ^2.2.2
   file_picker: ^6.1.1
+  provider: ^6.1.5+1
+  pbp_django_auth: ^0.4.0
 
 dev_dependencies:
   flutter_test:

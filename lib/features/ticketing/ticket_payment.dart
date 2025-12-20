@@ -80,17 +80,25 @@ class _TicketPaymentPageState extends State<TicketPaymentPage> with TickerProvid
       final data = jsonDecode(response.body);
       if (response.statusCode == 200 && data['status'] == 'success') {
          if (mounted) {
-           Navigator.pushReplacement(
-            context,
-            MaterialPageRoute(
+           // Simpan referensi sebelum pop
+           final navigator = Navigator.of(context);
+           final ticketId = widget.ticketId;
+           final baseUrl = widget.baseUrl;
+           
+           // Pop dulu agar .then() di ticketing_page terpanggil dan status ter-refresh
+           navigator.pop(true);
+           
+           // Langsung push ke halaman detail
+           navigator.push(
+             MaterialPageRoute(
                builder: (context) => TicketDetailPage(
-                 ticketId: widget.ticketId,
-                 baseUrl: widget.baseUrl,
+                 ticketId: ticketId,
+                 baseUrl: baseUrl,
                  initialIsUsed: false,
                ),
-            ),
-          );
-        }
+             ),
+           );
+         }
       } else {
          if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
