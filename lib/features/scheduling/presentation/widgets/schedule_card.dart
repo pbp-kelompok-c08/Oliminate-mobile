@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import 'package:oliminate_mobile/core/app_config.dart';
 import 'package:oliminate_mobile/core/theme/app_colors.dart';
 import '../../data/models/schedule.dart';
 
@@ -55,7 +56,7 @@ class ScheduleCard extends StatelessWidget {
                   children: <Widget>[
                     _buildHeroImage(),
                     Padding(
-                      padding: const EdgeInsets.fromLTRB(20, 20, 20, 0),
+                      padding: const EdgeInsets.fromLTRB(20, 16, 20, 0),
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: <Widget>[
@@ -76,7 +77,7 @@ class ScheduleCard extends StatelessWidget {
                               _buildStatusBadge(),
                             ],
                           ),
-                          const SizedBox(height: 8),
+                          const SizedBox(height: 4),
                           Row(
                             children: [
                               Icon(
@@ -96,7 +97,7 @@ class ScheduleCard extends StatelessWidget {
                               ),
                             ],
                           ),
-                          const SizedBox(height: 4),
+                          const SizedBox(height: 2),
                           Row(
                             children: [
                               Icon(
@@ -178,9 +179,9 @@ class ScheduleCard extends StatelessWidget {
                         ],
                       ),
                     ),
-                    const SizedBox(height: 16),
+                    const SizedBox(height: 8),
                     Padding(
-                      padding: const EdgeInsets.fromLTRB(20, 0, 20, 20),
+                      padding: const EdgeInsets.fromLTRB(20, 0, 20, 8),
                       child: Row(
                         mainAxisAlignment: MainAxisAlignment.end,
                         children: <Widget>[
@@ -250,10 +251,13 @@ class ScheduleCard extends StatelessWidget {
     final Widget imageChild;
 
     if (url != null && url.isNotEmpty) {
+      final String encoded = Uri.encodeComponent(url);
+      final String proxyUrl = '${AppConfig.backendBaseUrl}/merchandise/proxy-image/?url=$encoded';
+
       imageChild = Image.network(
-        url,
+        proxyUrl,
         width: double.infinity,
-        height: 180,
+        height: 140,
         fit: BoxFit.cover,
         errorBuilder: (_, __, ___) => _placeholder(),
       );
@@ -265,7 +269,7 @@ class ScheduleCard extends StatelessWidget {
       children: [
         SizedBox(
           width: double.infinity,
-          height: 180,
+          height: 140,
           child: imageChild,
         ),
         // Gradient overlay
@@ -327,7 +331,7 @@ class ScheduleCard extends StatelessWidget {
 
   Widget _placeholder() {
     return Container(
-      height: 180,
+      height: 140,
       decoration: BoxDecoration(
         gradient: LinearGradient(
           colors: [

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import 'package:oliminate_mobile/core/app_config.dart';
 import 'package:oliminate_mobile/core/theme/app_colors.dart';
 import '../../data/models/schedule.dart';
 
@@ -47,10 +48,6 @@ class ScheduleDetailPage extends StatelessWidget {
             _buildHeroImage(),
             const SizedBox(height: 16),
             _buildInfoCard(),
-            if ((schedule.caption ?? '').isNotEmpty) ...<Widget>[
-              const SizedBox(height: 16),
-              _buildCaptionCard(),
-            ],
             if (isOwner && (onEdit != null || onDelete != null)) ...<Widget>[
               const SizedBox(height: 16),
               _buildOwnerActions(context),
@@ -63,16 +60,22 @@ class ScheduleDetailPage extends StatelessWidget {
 
   Widget _buildHeroImage() {
     final String? url = schedule.imageUrl;
+    final Widget child;
 
-    final Widget child = (url != null && url.isNotEmpty)
-        ? Image.network(
-            url,
-            height: 220,
-            width: double.infinity,
-            fit: BoxFit.cover,
-            errorBuilder: (_, __, ___) => _placeholder(),
-          )
-        : _placeholder();
+    if (url != null && url.isNotEmpty) {
+      final String encoded = Uri.encodeComponent(url);
+      final String proxyUrl = '${AppConfig.backendBaseUrl}/merchandise/proxy-image/?url=$encoded';
+
+      child = Image.network(
+        proxyUrl,
+        height: 220,
+        width: double.infinity,
+        fit: BoxFit.cover,
+        errorBuilder: (_, __, ___) => _placeholder(),
+      );
+    } else {
+      child = _placeholder();
+    }
 
     return ClipRRect(
       borderRadius: BorderRadius.circular(20),
@@ -118,6 +121,26 @@ class ScheduleDetailPage extends StatelessWidget {
             const SizedBox(height: 16),
             _infoRow(Icons.calendar_today, '${schedule.date} • ${schedule.time}'),
             const SizedBox(height: 8),
+            if ((schedule.caption ?? '').isNotEmpty) ...<Widget>[
+              const Text(
+                'Catatan',
+                style: TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.w600,
+                  color: AppColors.neutral900,
+                ),
+              ),
+              const SizedBox(height: 4),
+              Text(
+                schedule.caption ?? '',
+                style: const TextStyle(
+                  fontSize: 14,
+                  color: AppColors.neutral700,
+                  height: 1.4,
+                ),
+              ),
+              const SizedBox(height: 12),
+            ],
             _infoRow(Icons.place, schedule.location),
             const SizedBox(height: 8),
             _infoRow(
@@ -181,37 +204,6 @@ class ScheduleDetailPage extends StatelessWidget {
           fontSize: 12,
           fontWeight: FontWeight.w600,
           color: textColor,
-        ),
-      ),
-    );
-  }
-
-  Widget _buildCaptionCard() {
-    return Card(
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-      elevation: 1,
-      child: Padding(
-        padding: const EdgeInsets.all(20),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: <Widget>[
-            const Text(
-              'Catatan',
-              style: TextStyle(
-                fontSize: 16,
-                fontWeight: FontWeight.w600,
-                color: AppColors.neutral900,
-              ),
-            ),
-            const SizedBox(height: 8),
-            Text(
-              schedule.caption ?? '-',
-              style: const TextStyle(
-                fontSize: 14,
-                color: AppColors.neutral700,
-              ),
-            ),
-          ],
         ),
       ),
     );

@@ -304,8 +304,8 @@ class _SchedulingPageState extends State<SchedulingPage> {
                             crossAxisSpacing: 12,
                             mainAxisSpacing: 12,
                             childAspectRatio:
-                                singleColumn ? 0.7 : 0.85,
-                            mainAxisExtent: singleColumn ? 680 : null,
+                                singleColumn ? 0.75 : 0.85,
+                            mainAxisExtent: singleColumn ? 420 : null,
                           );
 
                           return RefreshIndicator(
