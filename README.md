@@ -10,6 +10,9 @@
 ## Tautan Desain
 **Figma:** [Desain Oliminate Mobile](https://www.figma.com/design/3abL2ZjytH35pEF783gCFx/Oliminate-mobile?node-id=0-1&p=f&t=kh8IlqZyT6hccBoy-0)
 
+## Tautan Video Promosi
+**Youtube:** https://youtu.be/oWhr1jSokXU
+
 ## Tautan Aplikasi
 [![Build Status](https://app.bitrise.io/app/ce11d9f1-862a-4cdd-a1e8-2bf9117c6e27/status.svg?token=fI3b0-u_ry1JLn15RZLE0g&branch=main)](https://app.bitrise.io/app/ce11d9f1-862a-4cdd-a1e8-2bf9117c6e27)
 Download Bitrise : https://app.bitrise.io/app/ce11d9f1-862a-4cdd-a1e8-2bf9117c6e27/installable-artifacts/bfa06197d580974b/public-install-page/fa35c62a22453b6f5f90c559a1a7e367
