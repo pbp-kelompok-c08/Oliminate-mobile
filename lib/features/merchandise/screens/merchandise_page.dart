@@ -179,9 +179,6 @@ class _MerchandisePageState extends State<MerchandisePage> {
     final url = Uri.parse('/merchandise/list/$merchandiseId/delete/').toString();
 
     try {
-      // final response = await http.post(
-      //   url,
-      // );
       final response = await _authRepo.client.postForm(url, body:{});
 
       if (response.statusCode == 302 || response.statusCode == 200) {
@@ -469,19 +466,6 @@ class _MerchandiseCardState extends State<_MerchandiseCard> {
   bool _isAddingToCart = false; // Local state for loading indicator
 
   String? _getResolvedImageUrl(String? url) {
-    // if (url == null || url.isEmpty) {
-    //   return null;
-    // }
-    // if (url.startsWith('http://') || url.startsWith('https://')) {
-    //   return url;
-    // }
-    // try {
-    //   Uri baseUri = Uri.parse(widget.baseUrl);
-    //   Uri resolvedUri = baseUri.resolve(url);
-    //   return resolvedUri.toString();
-    // } catch (e) {
-    //   return '${widget.baseUrl}$url';
-    // }
     return 'https://adjie-m-oliminate.pbp.cs.ui.ac.id/merchandise/proxy-image/?url=${Uri.encodeComponent(widget.merch.imageUrl.toString())}';
   }
   
@@ -498,15 +482,6 @@ class _MerchandiseCardState extends State<_MerchandiseCard> {
         '/merchandise/api/cart/add/${widget.merch.id}/').toString();
 
     try {
-      // final response = await http.post(
-      //   url,
-      //   headers: {
-      //     'Content-Type': 'application/json'
-      //   },
-      //   body: json.encode({
-      //     'quantity': 1, 
-      //   }),
-      // );
       final response = await AuthRepository.instance.client.postForm(url, body: {});
 
       if (response.statusCode == 302 || response.statusCode == 200) {

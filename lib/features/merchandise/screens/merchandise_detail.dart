@@ -3,6 +3,7 @@ import 'package:http/http.dart' as http;
 import 'package:intl/intl.dart';
 import 'dart:convert';
 import '../models/merchandise_model.dart'; 
+import 'package:oliminate_mobile/features/user-profile/auth_repository.dart';
 
 class MerchandiseDetailScreen extends StatefulWidget {
   // IMPORTANT: The API URL for adding an item to the cart
@@ -44,24 +45,10 @@ class _MerchandiseDetailScreenState extends State<MerchandiseDetailScreen> {
 
     // Construct the full URL for the cart_add_item endpoint
     final url = Uri.parse(
-        'https://adjie-m-oliminate.pbp.cs.ui.ac.id/merchandise/cart/add/${widget.merchandise.id}/');
+        '/merchandise/api/cart/add/${widget.merchandise.id}/').toString();
 
     try {
-      final response = await http.post(
-        url,
-        headers: {
-          'Content-Type': 'application/json',
-          // NOTE: For Django POST requests, you often need the CSRF token.
-          // In a real Flutter app authenticating with Django sessions,
-          // you would need to handle session cookies and CSRF tokens.
-          // For simplicity in this single file example, we omit it, but be aware
-          // that if Django's CSRF protection is active, this will fail.
-          // You would typically send the quantity as form data or in the URL query.
-        },
-        body: json.encode({
-          'quantity': _selectedQuantity,
-        }),
-      );
+      final response = await AuthRepository.instance.client.postForm(url, body: {});
 
       if (response.statusCode == 302 || response.statusCode == 200) {
         // Django's redirect (302) or success (200)
