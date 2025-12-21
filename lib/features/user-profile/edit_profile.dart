@@ -198,6 +198,21 @@ class _EditProfilePageState extends State<EditProfilePage> {
     }
 
     return Scaffold(
+      backgroundColor: const Color(0xFFF5F5F5),
+      appBar: AppBar(
+        title: const Text(
+          'Ubah Profil',
+          style: TextStyle(fontWeight: FontWeight.w700, fontSize: 18),
+        ),
+        backgroundColor: _navy,
+        foregroundColor: Colors.white,
+        elevation: 0.5,
+        centerTitle: false,
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back_rounded),
+          onPressed: () => Navigator.of(context).pop(),
+        ),
+      ),
       body: SafeArea(
         child: SingleChildScrollView(
           padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 24),
@@ -207,14 +222,6 @@ class _EditProfilePageState extends State<EditProfilePage> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.center,
                 children: [
-                  Text(
-                    'Edit Profile',
-                    style: theme.textTheme.titleLarge?.copyWith(
-                      fontWeight: FontWeight.w800,
-                      color: _navy,
-                    ),
-                  ),
-                  const SizedBox(height: 14),
                   Container(
                     width: double.infinity,
                     decoration: BoxDecoration(
@@ -261,19 +268,19 @@ class _EditProfilePageState extends State<EditProfilePage> {
                         ),
                         const SizedBox(height: 22),
                         _FormField(
-                          label: 'Username',
+                          label: 'Nama Pengguna',
                           controller: _usernameController,
                           hint: 'Isi username',
                         ),
                         const SizedBox(height: 16),
                         _FormField(
-                          label: 'First Name',
+                          label: 'Nama Depan',
                           controller: _firstNameController,
                           hint: 'Isi nama depan',
                         ),
                         const SizedBox(height: 16),
                         _FormField(
-                          label: 'Last Name',
+                          label: 'Nama Belakang',
                           controller: _lastNameController,
                           hint: 'Isi nama belakang',
                         ),
@@ -288,7 +295,7 @@ class _EditProfilePageState extends State<EditProfilePage> {
                         Align(
                           alignment: Alignment.centerLeft,
                           child: Text(
-                            'Faculty',
+                            'Fakultas',
                             style: theme.textTheme.labelLarge?.copyWith(
                               fontWeight: FontWeight.w700,
                               color: const Color(0xFF4B5563),
@@ -341,7 +348,7 @@ class _EditProfilePageState extends State<EditProfilePage> {
                                 ),
                                 onPressed: () => Navigator.of(context).pop(),
                                 child: Text(
-                                  'Cancel',
+                                  'Batal',
                                   style: theme.textTheme.labelLarge?.copyWith(
                                     color: _baseBlue,
                                     fontWeight: FontWeight.w700,
@@ -361,7 +368,7 @@ class _EditProfilePageState extends State<EditProfilePage> {
                                 ),
                                 onPressed: _isSaving ? null : _save,
                                 child: Text(
-                                  _isSaving ? 'Saving...' : 'Save',
+                                  _isSaving ? 'Menyimpan...' : 'Simpan',
                                   style: theme.textTheme.labelLarge?.copyWith(
                                     color: Colors.white,
                                     fontWeight: FontWeight.w700,

@@ -1,107 +1,114 @@
 # Oliminate
-Nama Anggota :
+
+## Anggota Kelompok
 1. Adjie M. Usman (2406423313)
 2. Muhammad Azka Awliya (2406431510)
 3. Abigail Namaratonggi Pasaribu (2406495773)
 4. Felesia Junelus (2406354152)
 5. Ahmad Wasis Shofiyulloh (2406362646)
 
-## Link Figma
-link : https://www.figma.com/design/3abL2ZjytH35pEF783gCFx/Oliminate-mobile?node-id=0-1&p=f&t=kh8IlqZyT6hccBoy-0
+## Tautan Desain
+**Figma:** [Desain Oliminate Mobile](https://www.figma.com/design/3abL2ZjytH35pEF783gCFx/Oliminate-mobile?node-id=0-1&p=f&t=kh8IlqZyT6hccBoy-0)
 
-## Link 
-belum ada
+## Tautan Video Promosi
+**Youtube:** https://youtu.be/oWhr1jSokXU
 
-## Link Dataset
-link : https://docs.google.com/spreadsheets/d/1zP3dnLrexYkfGR_FgusvkO_6FrLa1QWGLN8b299nvts/edit
+## Tautan Aplikasi
+[![Build Status](https://app.bitrise.io/app/ce11d9f1-862a-4cdd-a1e8-2bf9117c6e27/status.svg?token=fI3b0-u_ry1JLn15RZLE0g&branch=main)](https://app.bitrise.io/app/ce11d9f1-862a-4cdd-a1e8-2bf9117c6e27)
+Download Bitrise : https://app.bitrise.io/app/ce11d9f1-862a-4cdd-a1e8-2bf9117c6e27/installable-artifacts/bfa06197d580974b/public-install-page/fa35c62a22453b6f5f90c559a1a7e367
+
+Download github : https://github.com/pbp-kelompok-c08/Oliminate-mobile/releases/latest/download/oliminate.apk
+
+## Tautan Dataset
+**Google Sheets:** [Dataset Oliminate](https://docs.google.com/spreadsheets/d/1zP3dnLrexYkfGR_FgusvkO_6FrLa1QWGLN8b299nvts/edit)
+
+---
 
 ## Tentang Produk
 
-Oliminate adalah aplikasi yang dirancang untuk membantu event organizer dalam mengelola perlombaan secara efisien dan terintegrasi.  
-Produk ini dibuat oleh Kelompok C08 dengan tujuan mempermudah pengelolaan event kompetisi, mulai dari penjadwalan, penjualan tiket, hingga pengalaman menonton secara langsung maupun daring.
+Oliminate adalah aplikasi *event management* yang dirancang khusus untuk membantu penyelenggara kompetisi olahraga. Aplikasi ini menyediakan solusi lengkap mulai dari pembuatan jadwal pertandingan, penjualan tiket secara *online*, pengelolaan *merchandise* resmi, hingga sistem ulasan dan penilaian acara. Produk ini dikembangkan oleh Kelompok C08 sebagai proyek tugas kelompok mata kuliah Pemrograman Berbasis Platform (PBP) Fakultas Ilmu Komputer Universitas Indonesia.
 
-##
-User role : 
-- Pengguna :
-1. Bisa ngatur user profile
-2. Bisa ngelihat schedule
-3. Bisa beli tiket
-4. Bisa beli merchandise
-5. Bisa mereview
-- Panitia : 
-1. Bisa ngatur user profile
-2. Bisa menambahkan schedule
-3. Bisa menjual tiket
-4. Bisa menjual merchandise
-5. Bisa melihat review
-## Tujuan
+---
 
-- Mempermudah panitia dalam mengatur jadwal pertandingan setiap tim.
-- Menyediakan pengalaman pembelian tiket yang praktis dan modern.
-- Menyediakan halaman utama (main page) yang berfungsi sebagai pusat informasi.
+## Peran Pengguna
+
+### Pengguna
+1. Dapat mengatur profil pengguna.
+2. Dapat melihat jadwal pertandingan.
+3. Dapat membeli tiket.
+4. Dapat membeli suvenir.
+5. Dapat memberikan ulasan.
+
+### Panitia
+1. Dapat mengatur profil pengguna.
+2. Dapat menambahkan jadwal pertandingan.
+3. Dapat menjual tiket.
+4. Dapat menjual suvenir.
+5. Dapat melihat ulasan.
+
+---
+
+## Tujuan Aplikasi
+
+- Mempermudah panitia dalam membuat dan mengelola jadwal pertandingan (*scheduling*).
+- Menyediakan sistem pembelian tiket yang praktis dengan verifikasi kode QR.
+- Memfasilitasi penjualan *merchandise* resmi kompetisi secara *online*.
+- Memberikan wadah bagi pengguna untuk memberikan ulasan dan penilaian terhadap acara.
+- Menyediakan halaman utama yang informatif sebagai pusat navigasi aplikasi.
+
+---
 
 ## Fitur Utama
-Fitur Utama (sesuai PBI)
-1. Scheduling (Adjie)
 
-Panitia dapat membuat jadwal pertandingan dengan tanggal, jam, lokasi, dan cabang olahraga, serta menambahkan peserta/tim yang akan bertanding.
+### 1. *Scheduling* — Penjadwalan (Adjie)
 
-User dapat melihat jadwal dan daftar peserta yang bertanding secara real-time.
+- Panitia dapat membuat jadwal pertandingan dengan informasi tanggal, waktu, lokasi, dan cabang olahraga.
+- Panitia dapat menandai status pertandingan (*upcoming*, *completed*, atau *reviewable*).
+- Pengguna dapat melihat daftar jadwal pertandingan dan melakukan *filter* berdasarkan status.
+- Tersedia halaman detail untuk melihat informasi lengkap setiap pertandingan.
 
-2. Ticketing (Felesia)
+### 2. *Ticketing* — Pembelian Tiket (Felesia)
 
-User dapat memilih event dan jumlah tiket yang ingin dibeli melalui sistem pembelian online.
+- Pengguna dapat membeli tiket pertandingan melalui sistem pembelian *online*.
+- Mendukung berbagai metode pembayaran.
+- Setiap tiket memiliki kode QR unik untuk verifikasi di pintu masuk.
+- Panitia dapat memindai kode QR untuk validasi tiket pengguna.
+- Pengguna dapat melihat riwayat tiket dan status pembayaran (*paid* atau *unpaid*).
+- Panitia dapat mengatur harga tiket untuk setiap jadwal pertandingan.
 
-Mendukung berbagai metode pembayaran (e-wallet, transfer, dan lainnya).
+### 3. *Review* — Ulasan dan Penilaian (Abigail)
 
-Setiap tiket memiliki kode QR unik yang dapat dipindai untuk verifikasi di pintu masuk.
+- Pengguna dapat memberikan penilaian bintang (1-5) dan menulis ulasan terhadap pertandingan yang sudah selesai.
+- Sistem menampilkan rata-rata penilaian dan jumlah ulasan untuk setiap acara.
+- Pengguna dapat melihat daftar *event* berdasarkan popularitas ulasan.
+- Panitia dapat melihat seluruh ulasan sebagai bahan evaluasi.
 
-Panitia dapat melakukan validasi tiket secara cepat melalui pemindaian QR Code.
+### 4. *User Profile* — Profil Pengguna (Azka)
 
-User dapat melihat riwayat tiket yang telah dibeli sebelumnya.
+- Pengguna dapat melihat dan mengubah profil pribadi (nama pengguna, nama depan, nama belakang, surel, dan fakultas).
+- Tersedia tombol *logout* untuk keluar dari akun.
+- Tampilan profil yang modern dengan desain *card-based*.
 
-3. Reviews & Rating (Abigail)
+### 5. *Merchandise* — Penjualan Suvenir (Wasis)
 
-User dapat memberikan rating (bintang/angka) dan menulis review singkat terhadap event.
+- Menampilkan katalog *merchandise* resmi dengan foto, deskripsi, harga, dan stok.
+- Pengguna dapat menambahkan barang ke keranjang (*cart*) dan melakukan *checkout*.
+- Panitia dapat menambah, mengubah, dan menghapus produk melalui *form* khusus.
+- Sistem menampilkan riwayat pembelian dengan kode QR sebagai bukti transaksi.
 
-Sistem menampilkan rata-rata rating untuk setiap event agar user dapat menilai kualitasnya.
+### 6. *Main Page* — Halaman Utama (Azka)
 
-Panitia dapat melihat seluruh review dan umpan balik untuk evaluasi event berikutnya.
+- Menampilkan *hero section* dengan ucapan selamat datang dan informasi singkat aplikasi.
+- Menyediakan *preview* jadwal pertandingan terbaru.
+- Dilengkapi tombol pintasan ke fitur Tiket dan Ulasan.
 
-4. User Profile (Azka)
+---
 
-User dapat membuat dan memperbarui profil pribadi (nama, email, foto, fakultas/jurusan).
+## Integrasi dengan Situs Web
 
-Menampilkan daftar lomba yang diikuti, tiket yang dimiliki, serta riwayat aktivitas user.
+Aplikasi *mobile* Oliminate terintegrasi dengan *backend* Django yang sudah di-*deploy* di server. Berikut adalah langkah-langkah yang dilakukan untuk mengintegrasikan aplikasi:
 
-Sistem menyediakan fitur achievement/badge untuk menampilkan pencapaian user berdasarkan partisipasi atau kemenangan.
-
-5. Merchandise (Wasis)
-
-Menampilkan katalog merchandise resmi dengan foto, deskripsi, dan harga.
-
-User dapat menambahkan barang ke keranjang dan melakukan checkout dengan mudah.
-
-Sistem menyediakan pembayaran merchandise secara online.
-
-Panitia dapat mengatur stok, harga, dan deskripsi produk melalui dashboard.
-
-User dapat melihat riwayat pembelian merchandise sebelumnya.
-
-6. Main Page (Azka)
-
-Halaman utama menampilkan banner event utama, jadwal, dan berita terkini.
-
-Menyediakan daftar cabang olahraga aktif dan highlight pertandingan.
-
-Dilengkapi shortcut ke fitur utama seperti jadwal, tiket, review, merchandise, dan profil user.
-
-Tersedia halaman About & Contact untuk mengenal panitia dan menghubungi mereka.
-
-## Integrasi dengan website
-Berikut adalah langkah-langkah yang akan dilakukan untuk mengintegrasikan aplikasi dengan server web:
-
-1. Mengimplementasikan sebuah wrapper class dengan menggunakan library HTTP dan MAP untuk mendukung penggunaan cookie-based authentication pada aplikasi.
-2. Mengimplementasikan REST API pada Django (views.py) dengan menggunakan JsonResponse atau Django JSON Serializer.
-3. Mengimplementasikan desain front-end untuk aplikasi berdasarkan desain website yang sudah ada sebelumnya.
-4. Melakukan integrasi antara front-end dengan back-end dengan menggunakan konsep asynchronous HTTP.
+1. Mengimplementasikan *wrapper class* pada `AuthRepository` dengan menggunakan pustaka `http` untuk menangani autentikasi berbasis *cookie* dan *session*.
+2. Mengimplementasikan *REST API* pada Django dengan *endpoint* JSON untuk setiap fitur (*scheduling*, *ticketing*, *merchandise*, *review*, dan *user profile*).
+3. Mengimplementasikan desain *frontend* Flutter berdasarkan desain situs web yang sudah ada dengan konsistensi warna dan tata letak.
+4. Melakukan integrasi *frontend* dengan *backend* menggunakan konsep *asynchronous HTTP request* dengan `Future` dan `async/await`.
