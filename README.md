@@ -11,7 +11,10 @@
 **Figma:** [Desain Oliminate Mobile](https://www.figma.com/design/3abL2ZjytH35pEF783gCFx/Oliminate-mobile?node-id=0-1&p=f&t=kh8IlqZyT6hccBoy-0)
 
 ## Tautan Aplikasi
-*Belum tersedia*
+[![Build Status](https://app.bitrise.io/app/ce11d9f1-862a-4cdd-a1e8-2bf9117c6e27/status.svg?token=fI3b0-u_ry1JLn15RZLE0g&branch=main)](https://app.bitrise.io/app/ce11d9f1-862a-4cdd-a1e8-2bf9117c6e27)
+Download Bitrise : https://app.bitrise.io/app/ce11d9f1-862a-4cdd-a1e8-2bf9117c6e27/installable-artifacts/72a7d0139dd44580/public-install-page/432f9d331c4ba26e75d2d82f0d14438f
+
+Download github : https://github.com/pbp-kelompok-c08/Oliminate-mobile/releases/download/v1.0.0%2B1-20251221070616/app-x86_64-release.apk
 
 ## Tautan Dataset
 **Google Sheets:** [Dataset Oliminate](https://docs.google.com/spreadsheets/d/1zP3dnLrexYkfGR_FgusvkO_6FrLa1QWGLN8b299nvts/edit)
@@ -95,7 +98,6 @@ Oliminate adalah aplikasi *event management* yang dirancang khusus untuk membant
 - Menampilkan *hero section* dengan ucapan selamat datang dan informasi singkat aplikasi.
 - Menyediakan *preview* jadwal pertandingan terbaru.
 - Dilengkapi tombol pintasan ke fitur Tiket dan Ulasan.
-- Navigasi ke semua fitur melalui *bottom navigation bar* dan *drawer menu*.
 
 ---
 
