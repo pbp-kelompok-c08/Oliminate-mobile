@@ -1,6 +1,11 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
+import 'package:oliminate_mobile/core/app_config.dart';
+import 'package:oliminate_mobile/features/scheduling/data/datasources/scheduling_api_service.dart';
+import 'package:oliminate_mobile/features/scheduling/data/models/schedule.dart';
+import 'package:oliminate_mobile/features/user-profile/auth_repository.dart';
 import 'package:oliminate_mobile/features/user-profile/main_profile.dart';
-import 'package:oliminate_mobile/left_drawer.dart';
 import 'package:oliminate_mobile/widgets/main_scaffold.dart';
 
 const _primaryDark = Color(0xFF113352);
@@ -10,19 +15,106 @@ const _redBase = Color(0xFFEA3C43);
 const _redLight1 = Color(0xFFF47479);
 const _neutralBg = Color(0xFFF5F5F5);
 
-class LandingPage extends StatelessWidget {
+class LandingPage extends StatefulWidget {
   const LandingPage({super.key});
 
   static const String routeName = '/landing';
 
-  void _notImplemented(String label) {
-    debugPrint('$label: tombol ini belum diimplementasikan');
+  @override
+  State<LandingPage> createState() => _LandingPageState();
+}
+
+class _LandingPageState extends State<LandingPage> {
+  late final SchedulingApiService _api;
+  final _authRepo = AuthRepository.instance;
+
+  List<Schedule> _upcomingSchedules = [];
+  bool _loadingSchedules = true;
+  bool _errorSchedules = false;
+  
+  // Timer for periodic polling
+  Timer? _refreshTimer;
+  static const Duration _refreshInterval = Duration(seconds: 15);
+
+  @override
+  void initState() {
+    super.initState();
+    _api = SchedulingApiService(
+      baseUrl: AppConfig.backendBaseUrl,
+      djangoClient: _authRepo.client,
+    );
+    _fetchUpcomingSchedules();
+    _startPeriodicRefresh();
+  }
+
+  @override
+  void dispose() {
+    _refreshTimer?.cancel();
+    super.dispose();
+  }
+
+  void _startPeriodicRefresh() {
+    _refreshTimer = Timer.periodic(_refreshInterval, (_) {
+      _silentRefreshSchedules();
+    });
+  }
+
+  /// Silent refresh without showing loading indicator
+  Future<void> _silentRefreshSchedules() async {
+    try {
+      final List<Schedule> allSchedules = await _api.fetchList();
+      if (!mounted) return;
+      
+      final upcoming = allSchedules
+          .where((s) => s.status.toLowerCase() == 'upcoming')
+          .take(5)
+          .toList();
+      
+      setState(() {
+        _upcomingSchedules = upcoming;
+        _errorSchedules = false;
+      });
+    } catch (e) {
+      // Silent fail - don't show error on periodic refresh
+      debugPrint('Silent refresh error: $e');
+    }
+  }
+
+  Future<void> _fetchUpcomingSchedules() async {
+    setState(() {
+      _loadingSchedules = true;
+      _errorSchedules = false;
+    });
+
+    try {
+      final List<Schedule> allSchedules = await _api.fetchList();
+      if (!mounted) return;
+      
+      // Filter only upcoming schedules and take first 5
+      final upcoming = allSchedules
+          .where((s) => s.status.toLowerCase() == 'upcoming')
+          .take(5)
+          .toList();
+      
+      setState(() {
+        _upcomingSchedules = upcoming;
+        _loadingSchedules = false;
+      });
+    } catch (e) {
+      if (!mounted) return;
+      debugPrint('Error fetching upcoming schedules: $e');
+      setState(() {
+        _errorSchedules = true;
+        _loadingSchedules = false;
+      });
+    }
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
+        automaticallyImplyLeading: false,
         title: const Text(
           'Oliminate',
           style: TextStyle(fontWeight: FontWeight.w700, fontSize: 18),
@@ -46,7 +138,6 @@ class LandingPage extends StatelessWidget {
           ),
         ],
       ),
-      drawer: LeftDrawer(),
       backgroundColor: _neutralBg,
       body: SafeArea(
         child: SingleChildScrollView(
@@ -60,7 +151,12 @@ class LandingPage extends StatelessWidget {
                   children: [
                     const _AboutSection(),
                     const SizedBox(height: 20),
-                    const _ScheduleSection(),
+                    _ScheduleSection(
+                      schedules: _upcomingSchedules,
+                      loading: _loadingSchedules,
+                      error: _errorSchedules,
+                      onRefresh: _fetchUpcomingSchedules,
+                    ),
                     const SizedBox(height: 20),
                     _TicketCallToAction(onTap: () {
                       Navigator.pushReplacement(
@@ -85,6 +181,7 @@ class LandingPage extends StatelessWidget {
     );
   }
 }
+
 
 class _HeroSection extends StatelessWidget {
   const _HeroSection();
@@ -273,7 +370,17 @@ class _AboutSection extends StatelessWidget {
 }
 
 class _ScheduleSection extends StatelessWidget {
-  const _ScheduleSection();
+  const _ScheduleSection({
+    required this.schedules,
+    required this.loading,
+    required this.error,
+    required this.onRefresh,
+  });
+
+  final List<Schedule> schedules;
+  final bool loading;
+  final bool error;
+  final VoidCallback onRefresh;
 
   @override
   Widget build(BuildContext context) {
@@ -284,7 +391,7 @@ class _ScheduleSection extends StatelessWidget {
         children: [
           Center(
             child: _GradientText(
-              'Jadwal Terdekat',
+              'Pertandingan Mendatang',
               gradient: const LinearGradient(
                 colors: [_primaryBlue, _redBase],
                 begin: Alignment.centerLeft,
@@ -296,11 +403,46 @@ class _ScheduleSection extends StatelessWidget {
             ),
           ),
           const SizedBox(height: 8),
-          if (_mockSchedules.isEmpty)
-            Text(
-              'Belum ada jadwal upcoming.',
-              textAlign: TextAlign.center,
-              style: theme.textTheme.bodyMedium?.copyWith(color: Colors.grey[600]),
+          if (loading)
+            const SizedBox(
+              height: 200,
+              child: Center(
+                child: CircularProgressIndicator(color: _primaryBlue),
+              ),
+            )
+          else if (error)
+            SizedBox(
+              height: 200,
+              child: Center(
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Icon(Icons.error_outline, color: Colors.grey[400], size: 48),
+                    const SizedBox(height: 12),
+                    Text(
+                      'Gagal memuat jadwal',
+                      style: theme.textTheme.bodyMedium?.copyWith(color: Colors.grey[600]),
+                    ),
+                    const SizedBox(height: 8),
+                    TextButton.icon(
+                      onPressed: onRefresh,
+                      icon: const Icon(Icons.refresh, size: 18),
+                      label: const Text('Coba Lagi'),
+                    ),
+                  ],
+                ),
+              ),
+            )
+          else if (schedules.isEmpty)
+            SizedBox(
+              height: 200,
+              child: Center(
+                child: Text(
+                  'Belum ada jadwal upcoming.',
+                  textAlign: TextAlign.center,
+                  style: theme.textTheme.bodyMedium?.copyWith(color: Colors.grey[600]),
+                ),
+              ),
             )
           else
             SizedBox(
@@ -310,11 +452,11 @@ class _ScheduleSection extends StatelessWidget {
                 padding: const EdgeInsets.symmetric(vertical: 12),
                 physics: const BouncingScrollPhysics(),
                 itemBuilder: (context, index) {
-                  final data = _mockSchedules[index];
-                  return _ScheduleCard(data: data);
+                  final schedule = schedules[index];
+                  return _ScheduleCard(schedule: schedule);
                 },
                 separatorBuilder: (_, __) => const SizedBox(width: 16),
-                itemCount: _mockSchedules.length,
+                itemCount: schedules.length,
               ),
             ),
         ],
@@ -324,9 +466,32 @@ class _ScheduleSection extends StatelessWidget {
 }
 
 class _ScheduleCard extends StatelessWidget {
-  const _ScheduleCard({required this.data});
+  const _ScheduleCard({required this.schedule});
 
-  final _ScheduleCardData data;
+  final Schedule schedule;
+
+  String get _matchTitle => '${schedule.team1} vs ${schedule.team2}';
+
+  String _formatDate(String dateStr) {
+    // Parse YYYY-MM-DD to readable format
+    try {
+      final parts = dateStr.split('-');
+      if (parts.length != 3) return dateStr;
+      final months = ['Jan', 'Feb', 'Mar', 'Apr', 'Mei', 'Jun', 'Jul', 'Agu', 'Sep', 'Okt', 'Nov', 'Des'];
+      final day = int.parse(parts[2]);
+      final month = int.parse(parts[1]);
+      final year = parts[0];
+      return '$day ${months[month - 1]} $year';
+    } catch (_) {
+      return dateStr;
+    }
+  }
+
+  String _formatTime(String timeStr) {
+    // Add WIB suffix if not present
+    if (timeStr.contains('WIB')) return timeStr;
+    return '$timeStr WIB';
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -354,12 +519,15 @@ class _ScheduleCard extends StatelessWidget {
           // Image with overflow hidden
           ClipRRect(
             borderRadius: const BorderRadius.vertical(top: Radius.circular(15)),
-            child: Image.asset(
-              data.imagePath,
-              height: 120,
-              width: double.infinity,
-              fit: BoxFit.cover,
-            ),
+            child: schedule.imageUrl != null && schedule.imageUrl!.isNotEmpty
+                ? Image.network(
+                    schedule.imageUrl!,
+                    height: 120,
+                    width: double.infinity,
+                    fit: BoxFit.cover,
+                    errorBuilder: (_, __, ___) => _buildPlaceholderImage(),
+                  )
+                : _buildPlaceholderImage(),
           ),
           Padding(
             padding: const EdgeInsets.all(16),
@@ -368,7 +536,7 @@ class _ScheduleCard extends StatelessWidget {
               children: [
                 // Match title
                 Text(
-                  data.matchTitle,
+                  _matchTitle,
                   style: theme.textTheme.titleMedium?.copyWith(
                     fontWeight: FontWeight.w700,
                     color: _primaryDark,
@@ -380,7 +548,7 @@ class _ScheduleCard extends StatelessWidget {
                 const SizedBox(height: 6),
                 // Category with red accent (like web)
                 Text(
-                  data.category.toUpperCase(),
+                  schedule.category.toUpperCase(),
                   style: theme.textTheme.labelSmall?.copyWith(
                     color: _redBase,
                     fontWeight: FontWeight.w600,
@@ -390,15 +558,34 @@ class _ScheduleCard extends StatelessWidget {
                 ),
                 const SizedBox(height: 12),
                 // Details with icons
-                _scheduleDetailRow('📅', data.date),
+                _scheduleDetailRow('📅', _formatDate(schedule.date)),
                 const SizedBox(height: 4),
-                _scheduleDetailRow('🕒', data.time),
+                _scheduleDetailRow('🕒', _formatTime(schedule.time)),
                 const SizedBox(height: 4),
-                _scheduleDetailRow('📍', data.location),
+                _scheduleDetailRow('📍', schedule.location),
               ],
             ),
           ),
         ],
+      ),
+    );
+  }
+
+  Widget _buildPlaceholderImage() {
+    return Container(
+      height: 120,
+      width: double.infinity,
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          colors: [_primaryBlue.withOpacity(0.2), _redBase.withOpacity(0.2)],
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+        ),
+      ),
+      child: Icon(
+        Icons.sports,
+        size: 48,
+        color: _primaryDark.withOpacity(0.3),
       ),
     );
   }
@@ -689,63 +876,3 @@ class _GradientText extends StatelessWidget {
   }
 }
 
-class _ScheduleCardData {
-  const _ScheduleCardData({
-    required this.team1,
-    required this.team2,
-    required this.category,
-    required this.date,
-    required this.time,
-    required this.location,
-    required this.imagePath,
-  });
-
-  final String team1;
-  final String team2;
-  final String category;
-  final String date;
-  final String time;
-  final String location;
-  final String imagePath;
-
-  String get matchTitle => '$team1 vs $team2';
-}
-
-const List<_ScheduleCardData> _mockSchedules = [
-  _ScheduleCardData(
-    team1: 'Garuda United',
-    team2: 'Harimau Muda',
-    category: 'Sepak Bola',
-    date: '12 Okt 2024',
-    time: '18:00 WIB',
-    location: 'Jakarta International Stadium',
-    imagePath: 'assets/images/sepak_bola.png',
-  ),
-  _ScheduleCardData(
-    team1: 'Blue Fire',
-    team2: 'Angkasa',
-    category: 'Basket',
-    date: '15 Okt 2024',
-    time: '16:30 WIB',
-    location: 'Istora Senayan',
-    imagePath: 'assets/images/basket.png',
-  ),
-  _ScheduleCardData(
-    team1: 'Rivaldo',
-    team2: 'Satria',
-    category: 'Voli',
-    date: '18 Okt 2024',
-    time: '14:00 WIB',
-    location: 'GOR Temuguruh',
-    imagePath: 'assets/images/voli.png',
-  ),
-  _ScheduleCardData(
-    team1: 'Smash ID',
-    team2: 'Feather',
-    category: 'Badminton',
-    date: '22 Okt 2024',
-    time: '19:30 WIB',
-    location: 'GOR Cendrawasih',
-    imagePath: 'assets/images/badminton.png',
-  ),
-];

@@ -8,8 +8,6 @@ import 'package:oliminate_mobile/features/review/review_page.dart';
 import 'package:oliminate_mobile/features/scheduling/presentation/pages/scheduling_page.dart';
 import 'package:oliminate_mobile/features/ticketing/ticketing_page.dart';
 import 'package:oliminate_mobile/features/user-profile/auth_repository.dart';
-import 'package:oliminate_mobile/features/user-profile/login.dart';
-import 'package:oliminate_mobile/features/user-profile/main_profile.dart';
 
 class MainScaffold extends StatefulWidget {
   const MainScaffold({super.key, this.initialIndex = 0});
@@ -96,31 +94,9 @@ class _MainScaffoldState extends State<MainScaffold> {
     });
   }
 
-  void _openDrawer() {
-    Scaffold.of(context).openDrawer();
-  }
-
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      drawer: _AppDrawer(
-        onProfileTap: () {
-          Navigator.pop(context); // Close drawer
-          Navigator.push(
-            context,
-            MaterialPageRoute(builder: (_) => const ProfilePage()),
-          );
-        },
-        onLogoutTap: () async {
-          Navigator.pop(context); // Close drawer
-          await _authRepo.logout();
-          if (!mounted) return;
-          Navigator.of(context).pushAndRemoveUntil(
-            MaterialPageRoute(builder: (_) => const LoginPage()),
-            (route) => false,
-          );
-        },
-      ),
       body: IndexedStack(
         index: _currentIndex,
         children: _pages,
@@ -131,85 +107,6 @@ class _MainScaffoldState extends State<MainScaffold> {
       ),
       floatingActionButton: _LogoFAB(onPressed: _goToHome),
       floatingActionButtonLocation: FloatingActionButtonLocation.centerDocked,
-    );
-  }
-}
-
-class _AppDrawer extends StatelessWidget {
-  const _AppDrawer({
-    required this.onProfileTap,
-    required this.onLogoutTap,
-  });
-
-  final VoidCallback onProfileTap;
-  final VoidCallback onLogoutTap;
-
-  @override
-  Widget build(BuildContext context) {
-    return Drawer(
-      child: ListView(
-        padding: EdgeInsets.zero,
-        children: [
-          DrawerHeader(
-            decoration: const BoxDecoration(
-              gradient: LinearGradient(
-                colors: [AppColors.pacilBlueDarker1, AppColors.pacilRedBase],
-                begin: Alignment.topLeft,
-                end: Alignment.bottomRight,
-              ),
-            ),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              mainAxisAlignment: MainAxisAlignment.end,
-              children: [
-                Container(
-                  width: 60,
-                  height: 60,
-                  decoration: BoxDecoration(
-                    color: Colors.white,
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                    child: ClipRRect(
-                      borderRadius: BorderRadius.circular(12),
-                      child: Image.asset(
-                        'assets/images/logo-transparent.png',
-                        fit: BoxFit.contain,
-                        errorBuilder: (_, __, ___) => const Icon(
-                          Icons.sports_esports,
-                          size: 36,
-                          color: AppColors.pacilBlueDarker1,
-                        ),
-                      ),
-                    ),
-                ),
-                const SizedBox(height: 12),
-                const Text(
-                  'Oliminate',
-                  style: TextStyle(
-                    color: Colors.white,
-                    fontSize: 22,
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-              ],
-            ),
-          ),
-          ListTile(
-            leading: const Icon(Icons.person_outline),
-            title: const Text('Profile'),
-            onTap: onProfileTap,
-          ),
-          const Divider(),
-          ListTile(
-            leading: const Icon(Icons.logout, color: AppColors.pacilRedBase),
-            title: const Text(
-              'Logout',
-              style: TextStyle(color: AppColors.pacilRedBase),
-            ),
-            onTap: onLogoutTap,
-          ),
-        ],
-      ),
     );
   }
 }
