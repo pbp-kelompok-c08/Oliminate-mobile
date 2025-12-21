@@ -32,37 +32,30 @@ jobs:
       - name: Get packages
         run: flutter pub get
 
+      - name: Decode Keystore
+        run: echo "${{ secrets.KEY_JKS }}" | base64 -d > android/app/release-keystore.jks
+
+      - name: Create key.properties
+        run: |
+          echo "storePassword=${{ secrets.KEY_PASSWORD }}" > android/key.properties
+          echo "keyPassword=${{ secrets.KEY_PASSWORD }}" >> android/key.properties
+          echo "keyAlias=release" >> android/key.properties
+          echo "storeFile=release-keystore.jks" >> android/key.properties
+
       - name: Build APK
         run: flutter build apk --release
 
-      - name: Rename APK to oliminate.apk
-        run: mv build/app/outputs/flutter-apk/app-release.apk build/app/outputs/flutter-apk/oliminate.apk        
+      - name: Rename APK
+        run: mv build/app/outputs/flutter-apk/app-release.apk build/app/outputs/flutter-apk/oliminate.apk
 
       - name: Build App Bundle
         run: flutter build appbundle --release
 
-      - name: Decode Keystore
-        run: echo "${{ secrets.KEY_JKS }}" | base64 -d > release-keystore.jks
-
-      - name: Sign APK and AAB
-        run: |
-          echo "Signing APK..."
-          jarsigner -verbose -sigalg SHA256withRSA -digestalg SHA-256 \
-            -keystore release-keystore.jks \
-            -storepass "${{ secrets.KEY_PASSWORD }}" \
-            -keypass "${{ secrets.KEY_PASSWORD }}" \
-            build/app/outputs/flutter-apk/oliminate.apk release
-          
-          echo "Signing AAB..."
-          jarsigner -verbose -sigalg SHA256withRSA -digestalg SHA-256 \
-            -keystore release-keystore.jks \
-            -storepass "${{ secrets.KEY_PASSWORD }}" \
-            -keypass "${{ secrets.KEY_PASSWORD }}" \
-            build/app/outputs/bundle/release/app-release.aab release
-
-      - name: Cleanup Keystore
+      - name: Cleanup Secrets
         if: always()
-        run: rm -f release-keystore.jks
+        run: |
+          rm -f android/app/release-keystore.jks
+          rm -f android/key.properties
 
       - name: Upload APK artifact
         uses: actions/upload-artifact@v4
