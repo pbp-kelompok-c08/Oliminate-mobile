@@ -4,6 +4,26 @@ import 'package:oliminate_mobile/core/app_config.dart';
 import 'package:oliminate_mobile/core/theme/app_colors.dart';
 import '../../data/models/schedule.dart';
 
+/// Mapping kategori ke path asset lokal
+const Map<String, String> _assetByCategory = {
+  'FUTSAL': 'assets/images/futsal.png',
+  'BASKET': 'assets/images/basket.png',
+  'BASKETBALL': 'assets/images/basket.png',
+  'SEPAK BOLA': 'assets/images/sepak_bola.png',
+  'VALORANT': 'assets/images/valorant.png',
+  'TENIS LAPANGAN': 'assets/images/tenis_lapangan.png',
+  'VOLI': 'assets/images/voli.png',
+  'VOLLY': 'assets/images/voli.png',
+  'HOCKEY': 'assets/images/hockey.png',
+  'TENIS MEJA': 'assets/images/tenis_meja.png',
+  'BADMINTON': 'assets/images/badminton.png',
+  'MLBB': 'assets/images/mlbb.jpg',
+  'DEFAULT': 'assets/images/default.png',
+};
+
+/// Normalize category string to uppercase for lookup
+String _normCat(String s) => s.trim().toUpperCase();
+
 class ScheduleCard extends StatelessWidget {
   const ScheduleCard({
     super.key,
@@ -247,22 +267,50 @@ class ScheduleCard extends StatelessWidget {
   }
 
   Widget _buildHeroImage() {
-    final String? url = schedule.imageUrl;
+    final String key = _normCat(schedule.category);
+    final bool hasAsset = _assetByCategory.containsKey(key) && key != 'DEFAULT';
+
     final Widget imageChild;
-
-    if (url != null && url.isNotEmpty) {
-      final String encoded = Uri.encodeComponent(url);
-      final String proxyUrl = '${AppConfig.backendBaseUrl}/merchandise/proxy-image/?url=$encoded';
-
-      imageChild = Image.network(
-        proxyUrl,
+    if (hasAsset) {
+      imageChild = Image.asset(
+        _assetByCategory[key]!,
         width: double.infinity,
         height: 140,
         fit: BoxFit.cover,
-        errorBuilder: (_, __, ___) => _placeholder(),
+        errorBuilder: (_, __, ___) => Image.asset(
+          _assetByCategory['DEFAULT']!,
+          width: double.infinity,
+          height: 140,
+          fit: BoxFit.cover,
+        ),
       );
     } else {
-      imageChild = _placeholder();
+      final String? url = schedule.imageUrl;
+      if (url != null && url.isNotEmpty) {
+        final String encoded = Uri.encodeComponent(url);
+        final String proxyUrl =
+            '${AppConfig.backendBaseUrl}/merchandise/proxy-image/?url=$encoded';
+
+        imageChild = Image.network(
+          proxyUrl,
+          width: double.infinity,
+          height: 140,
+          fit: BoxFit.cover,
+          errorBuilder: (_, __, ___) => Image.asset(
+            _assetByCategory['DEFAULT']!,
+            width: double.infinity,
+            height: 140,
+            fit: BoxFit.cover,
+          ),
+        );
+      } else {
+        imageChild = Image.asset(
+          _assetByCategory['DEFAULT']!,
+          width: double.infinity,
+          height: 140,
+          fit: BoxFit.cover,
+        );
+      }
     }
 
     return Stack(
@@ -272,7 +320,6 @@ class ScheduleCard extends StatelessWidget {
           height: 140,
           child: imageChild,
         ),
-        // Gradient overlay
         Positioned.fill(
           child: Container(
             decoration: BoxDecoration(

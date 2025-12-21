@@ -470,6 +470,26 @@ class _ScheduleCard extends StatelessWidget {
 
   final Schedule schedule;
 
+  /// Mapping kategori ke path asset lokal
+  static const Map<String, String> _assetByCategory = {
+    'FUTSAL': 'assets/images/futsal.png',
+    'BASKET': 'assets/images/basket.png',
+    'BASKETBALL': 'assets/images/basket.png',
+    'SEPAK BOLA': 'assets/images/sepak_bola.png',
+    'VALORANT': 'assets/images/valorant.png',
+    'TENIS LAPANGAN': 'assets/images/tenis_lapangan.png',
+    'VOLI': 'assets/images/voli.png',
+    'VOLLY': 'assets/images/voli.png',
+    'HOCKEY': 'assets/images/hockey.png',
+    'TENIS MEJA': 'assets/images/tenis_meja.png',
+    'BADMINTON': 'assets/images/badminton.png',
+    'MLBB': 'assets/images/mlbb.jpg',
+    'DEFAULT': 'assets/images/default.png',
+  };
+
+  /// Normalize category string to uppercase for lookup
+  static String _normCat(String s) => s.trim().toUpperCase();
+
   String get _matchTitle => '${schedule.team1} vs ${schedule.team2}';
 
   String _formatDate(String dateStr) {
@@ -519,15 +539,7 @@ class _ScheduleCard extends StatelessWidget {
           // Image with overflow hidden
           ClipRRect(
             borderRadius: const BorderRadius.vertical(top: Radius.circular(15)),
-            child: schedule.imageUrl != null && schedule.imageUrl!.isNotEmpty
-                ? Image.network(
-                    schedule.imageUrl!,
-                    height: 120,
-                    width: double.infinity,
-                    fit: BoxFit.cover,
-                    errorBuilder: (_, __, ___) => _buildPlaceholderImage(),
-                  )
-                : _buildPlaceholderImage(),
+            child: _buildScheduleImage(),
           ),
           Padding(
             padding: const EdgeInsets.all(16),
@@ -571,23 +583,52 @@ class _ScheduleCard extends StatelessWidget {
     );
   }
 
-  Widget _buildPlaceholderImage() {
-    return Container(
-      height: 120,
-      width: double.infinity,
-      decoration: BoxDecoration(
-        gradient: LinearGradient(
-          colors: [_primaryBlue.withOpacity(0.2), _redBase.withOpacity(0.2)],
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
+  Widget _buildScheduleImage() {
+    final String key = _normCat(schedule.category);
+    final bool hasAsset = _assetByCategory.containsKey(key) && key != 'DEFAULT';
+
+    // Priority 1: Use local asset for known categories
+    if (hasAsset) {
+      return Image.asset(
+        _assetByCategory[key]!,
+        height: 120,
+        width: double.infinity,
+        fit: BoxFit.cover,
+        errorBuilder: (_, __, ___) => Image.asset(
+          _assetByCategory['DEFAULT']!,
+          height: 120,
+          width: double.infinity,
+          fit: BoxFit.cover,
         ),
-      ),
-      child: Icon(
-        Icons.sports,
-        size: 48,
-        color: _primaryDark.withOpacity(0.3),
-      ),
-    );
+      );
+    }
+    // Priority 2: Use network image if URL exists
+    else {
+      final String? url = schedule.imageUrl;
+      if (url != null && url.isNotEmpty) {
+        return Image.network(
+          url,
+          height: 120,
+          width: double.infinity,
+          fit: BoxFit.cover,
+          errorBuilder: (_, __, ___) => Image.asset(
+            _assetByCategory['DEFAULT']!,
+            height: 120,
+            width: double.infinity,
+            fit: BoxFit.cover,
+          ),
+        );
+      }
+      // Priority 3: Default asset
+      else {
+        return Image.asset(
+          _assetByCategory['DEFAULT']!,
+          height: 120,
+          width: double.infinity,
+          fit: BoxFit.cover,
+        );
+      }
+    }
   }
 
   Widget _scheduleDetailRow(String icon, String text) {
