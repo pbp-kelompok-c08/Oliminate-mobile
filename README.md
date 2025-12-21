@@ -12,7 +12,7 @@
 
 ## Tautan Aplikasi
 [![Build Status](https://app.bitrise.io/app/ce11d9f1-862a-4cdd-a1e8-2bf9117c6e27/status.svg?token=fI3b0-u_ry1JLn15RZLE0g&branch=main)](https://app.bitrise.io/app/ce11d9f1-862a-4cdd-a1e8-2bf9117c6e27)
-Download Bitrise : https://app.bitrise.io/app/ce11d9f1-862a-4cdd-a1e8-2bf9117c6e27/installable-artifacts/72a7d0139dd44580/public-install-page/432f9d331c4ba26e75d2d82f0d14438f
+Download Bitrise : https://app.bitrise.io/app/ce11d9f1-862a-4cdd-a1e8-2bf9117c6e27/installable-artifacts/bfa06197d580974b/public-install-page/fa35c62a22453b6f5f90c559a1a7e367
 
 Download github : https://github.com/pbp-kelompok-c08/Oliminate-mobile/releases/latest/download/oliminate.apk
 
