@@ -64,7 +64,7 @@ class ScheduleDetailPage extends StatelessWidget {
 
     if (url != null && url.isNotEmpty) {
       final String encoded = Uri.encodeComponent(url);
-      final String proxyUrl = '${AppConfig.backendBaseUrl}/merchandise/proxy-image/?url=$encoded';
+      final String proxyUrl = '${AppConfig.backendBaseUrl}/scheduling/proxy-image/?url=$encoded';
 
       child = Image.network(
         proxyUrl,
